@@ -1,0 +1,2 @@
+clientReq:
+	-Aggiunto messaggio di benvenuto e inserimento userID e servizio richiesto

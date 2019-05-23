@@ -1,0 +1,2 @@
+clientReq:
+	-sistemare il do-while di inserimento nome servizio richiesto -> vedi dettagli nei commenti al sorgente
