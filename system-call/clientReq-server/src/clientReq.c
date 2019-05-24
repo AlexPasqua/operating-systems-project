@@ -10,6 +10,10 @@
 #include "errExit.h"
 
 
+// struct per comunicare i dati al server tramite FIFOSERVER
+struct Request { char user_id[50], service[50]; };
+
+
 // funz per controllare l'inserimento del servizio richiesto
 bool check_service_input(char *service){
   char *avail_servs[] = {"stampa", "salva", "invia"};
@@ -22,21 +26,22 @@ bool check_service_input(char *service){
   return false;
 }
 
+
 int main (int argc, char *argv[]) {
     printf("Benvenuto! I servizi disponibili sono i seguenti:\n - stampa\n - salva\n - invia");
 
+    struct Request req;
+
     // inserimento user_id
-    char user_id[50];
     printf("\n\nInserire codice identificativo utente: ");
-    scanf("%s", user_id);
+    scanf("%s", req.user_id);
 
     // selezione servizio
-    char service[50];
     do {
       printf("Inserire il nome del servizio richiesto: ");
-      scanf("%s", service);
+      scanf("%s", req.service);
     }
-    while (!check_service_input(service));
+    while (!check_service_input(req.service));
 
 
     // creo FIFOCLIENT, apro FIFOSERVER, apro FIFOCLIENT
