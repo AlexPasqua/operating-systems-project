@@ -1,2 +1,2 @@
 clientReq:
-	-Aggiunto messaggio di benvenuto e inserimento userID e servizio richiesto
+	-Inserimento servizio con funzione apposita per controllare le stringhe
