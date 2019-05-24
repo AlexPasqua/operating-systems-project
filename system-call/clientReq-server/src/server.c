@@ -1,7 +1,13 @@
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <signal.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #include "errExit.h"
+
 
 int main (int argc, char *argv[]) {
   // blocco tutti i signal tranne SIGTERM
@@ -15,12 +21,40 @@ int main (int argc, char *argv[]) {
   if (sigprocmask(SIG_SETMASK, &signal_set, NULL) == -1)
     errExit("sigprocmask failed");
 
-  // --> crea FIFOSERVER
+
+  // creo FIFOSERVER, apro FIFOSERVER, apro FIFOCLIENT
+  char *fifoserv_pathname = "/tmp/FIFOSERVER";
+  char *fifocli_pathname = "/tmp/FIFOCLIENT";
+  if (mkfifo(fifoserv_pathname, S_IRUSR | S_IWUSR) == -1)
+    errExit("mkfifo (FIFOSERVER) failed");
+
+  int fifoserver = open(fifoserv_pathname, O_RDONLY);
+  if (fifoserver == -1)
+    errExit("Server failed to open FIFOSERVER in read-only mode");
+
+  int fifoclient = open(fifocli_pathname, O_WRONLY);
+  if (fifoclient == -1)
+    errExit("Server failed to open FIFOCLIENT in write-only mode");
 
 
+  /*
+   *
+   *
+   * CORPO DEL SERVER
+   *
+   *
+  */
 
 
+  // chiudo FIFOCLIENT, chiudo ed elimino FIFOSERVER
+  if (close(fifoclient) == -1)
+    errExit("Server failed to close FIFOCLIENT");
 
-  // --> elimina FIFOSERVER
+  if (close(fifoserver) == -1)
+    errExit("Server failed to close FIFOSERVER");
+
+  if (unlink(fifoserv_pathname) != 0)
+    errExit("Server failed to unlink FIFOSERVER");
+
   return 0;
 }
