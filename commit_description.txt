@@ -1,0 +1,3 @@
+server: ha creato un insieme di 2 semafori (lo elimina alla fine) e li inizializza
+
+client: fa la get dello stesso insieme

@@ -6,9 +6,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
 
 #include "errExit.h"
 #include "myfifo.h"
+#include "semaphores.h"
 
 
 // funz per controllare l'inserimento del servizio richiesto
@@ -41,6 +44,16 @@ int main (int argc, char *argv[]) {
     while (!check_service_input(req.service));
 
 
+    // ottengo l'insieme di semafori creato dal server
+    key_t sem_key = ftok("semaphores.c", 'a');
+    if (sem_key == -1)
+      errExit("Client failed to create a key fot the semaphores set");
+
+    int semid = semget(sem_key, 2, S_IRUSR | S_IWUSR);
+    if (semid == -1)
+      errExit("Client failed to perform semget");
+
+
     // creo FIFOCLIENT, apro FIFOSERVER, apro FIFOCLIENT
     char *fifocli_pathname = "/tmp/FIFOCLIENT";
     char *fifoserv_pathname = "/tmp/FIFOSERVER";
@@ -55,6 +68,9 @@ int main (int argc, char *argv[]) {
     if (fifoclient == -1)
       errExit("ClientReq failed to open FIFOCLIENT in read-only mode");
 
+
+    // TEST
+    write(fifoserver, &req, sizeof(struct Request));
 
     /*
      *

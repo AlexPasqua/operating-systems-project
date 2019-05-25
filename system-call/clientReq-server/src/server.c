@@ -5,9 +5,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
 
 #include "errExit.h"
 #include "myfifo.h"
+#include "semaphores.h"
 
 
 int main (int argc, char *argv[]) {
@@ -23,6 +26,23 @@ int main (int argc, char *argv[]) {
     errExit("sigprocmask failed");
 
 
+  // creo un insieme di semafori per gestire la comunicaz su FIFO
+  key_t sem_key = ftok("semaphores.c", 'a');
+  if (sem_key == -1)
+    errExit("Server failed to create a key for the semaphores set");
+
+  int semid = semget(sem_key, 2, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+  if (semid == -1)
+    errExit("Server failed to perform semget");
+
+  unsigned short sem_values[2] = {0, 1}; /* il primo è per il server,
+  il secondo è per mutua esclusione tra i client*/
+  union semun arg;
+  arg.array = sem_values;
+  if (semctl(semid, 0/*ignored*/, SETALL, arg) == -1)
+    errExit("Server failed to set semaphores values");
+
+
   // creo FIFOSERVER, apro FIFOSERVER
   char *fifoserv_pathname = "/tmp/FIFOSERVER";
   char *fifocli_pathname = "/tmp/FIFOCLIENT";
@@ -34,6 +54,7 @@ int main (int argc, char *argv[]) {
     errExit("Server failed to open FIFOSERVER in read-only mode");
 
 
+
   // continua a controllare richieste dei client
   while (1){
     // apro FIFOCLIENT
@@ -41,12 +62,19 @@ int main (int argc, char *argv[]) {
     if (fifoclient == -1)
       errExit("Server failed to open FIFOCLIENT in write-only mode");
 
-
+    // TEST
+    char buf[USRID_STRDIM];
+    read(fifoserver, buf, USRID_STRDIM);
+    printf("%s\n", buf);
 
      // chiudo FIFOCLIENT
      if (close(fifoclient) == -1)
        errExit("Server failed to close FIFOCLIENT");
+
+      //TEST
+      sleep(10);
   }
+
 
 
   // chiudo ed elimino FIFOSERVER
@@ -55,6 +83,10 @@ int main (int argc, char *argv[]) {
 
   if (unlink(fifoserv_pathname) != 0)
     errExit("Server failed to unlink FIFOSERVER");
+
+  // elimino il set di semafori
+  if (semctl(semid, 0/*ignored*/, IPC_RMID, NULL) == -1)
+    errExit("Server failed to remove semaphores set");
 
   return 0;
 }

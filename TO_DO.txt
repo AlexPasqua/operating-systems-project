@@ -1,1 +1,2 @@
--Cominciare la comunicazione su fifo (che funzionano correttamente)
+-fai in modo che con i semafori il server possa aprire fifoclient senza lo "sleep(10)"
+-elimina le righe di codice (da rever e client) commentate con //TEST
