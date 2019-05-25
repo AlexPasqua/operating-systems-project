@@ -1,6 +1,9 @@
 #ifndef SEMAPHORES_H
 #define SEMAPHORES_H
 
+#define SRVSEM 0
+#define CLIMUTEX 1
+
 // definition of the union semun
 union semun {
   int val;

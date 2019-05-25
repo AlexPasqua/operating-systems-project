@@ -1,3 +1,1 @@
-server: ha creato un insieme di 2 semafori (lo elimina alla fine) e li inizializza
-
-client: fa la get dello stesso insieme
+Ora la comunicazione tra server e vari client funziona nel modo corretto. Ci sono delle righe contrassegnate dal commento //TEST che mostrano una comunicazione di prova...andranno eliminate per far spazio alla comunicazione vera e propria di dati veri.

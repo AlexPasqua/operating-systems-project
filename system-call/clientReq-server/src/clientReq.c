@@ -45,13 +45,16 @@ int main (int argc, char *argv[]) {
 
 
     // ottengo l'insieme di semafori creato dal server
-    key_t sem_key = ftok("semaphores.c", 'a');
+    key_t sem_key = ftok("src/semaphores.c", 'a');
     if (sem_key == -1)
       errExit("Client failed to create a key fot the semaphores set");
 
     int semid = semget(sem_key, 2, S_IRUSR | S_IWUSR);
     if (semid == -1)
       errExit("Client failed to perform semget");
+
+
+    semOp(semid, CLIMUTEX, -1); //blocco gli altri client mentre uno sta comunicando
 
 
     // creo FIFOCLIENT, apro FIFOSERVER, apro FIFOCLIENT
@@ -64,6 +67,7 @@ int main (int argc, char *argv[]) {
     if (fifoserver == -1)
       errExit("ClientReq failed to open FIFOSERVER in write-only mode");
 
+    semOp(semid, SRVSEM, 1);  //sblocco il server in attesa di FIFOCLIENT
     int fifoclient = open(fifocli_pathname, O_RDONLY);
     if (fifoclient == -1)
       errExit("ClientReq failed to open FIFOCLIENT in read-only mode");

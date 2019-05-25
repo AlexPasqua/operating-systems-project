@@ -27,11 +27,11 @@ int main (int argc, char *argv[]) {
 
 
   // creo un insieme di semafori per gestire la comunicaz su FIFO
-  key_t sem_key = ftok("semaphores.c", 'a');
+  key_t sem_key = ftok("src/semaphores.c", 'a');
   if (sem_key == -1)
     errExit("Server failed to create a key for the semaphores set");
 
-  int semid = semget(sem_key, 2, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+  int semid = semget(sem_key, 2, IPC_CREAT | /*IPC_EXCL |*/ S_IRUSR | S_IWUSR);
   if (semid == -1)
     errExit("Server failed to perform semget");
 
@@ -57,22 +57,27 @@ int main (int argc, char *argv[]) {
 
   // continua a controllare richieste dei client
   while (1){
+    // blocco il server finché un client non crea FIFOCLIENT
+    semOp(semid, SRVSEM, -1);
+
     // apro FIFOCLIENT
     int fifoclient = open(fifocli_pathname, O_WRONLY);
     if (fifoclient == -1)
       errExit("Server failed to open FIFOCLIENT in write-only mode");
 
     // TEST
-    char buf[USRID_STRDIM];
-    read(fifoserver, buf, USRID_STRDIM);
-    printf("%s\n", buf);
+    char usr[USRID_STRDIM];
+    char srv[SRV_STRDIM];
+    read(fifoserver, usr, USRID_STRDIM);
+    read(fifoserver, srv, SRV_STRDIM);
+    printf("%s\t-\t%s\n", usr, srv);
 
      // chiudo FIFOCLIENT
      if (close(fifoclient) == -1)
        errExit("Server failed to close FIFOCLIENT");
 
-      //TEST
-      sleep(10);
+     // sblocco un client in attesa
+     semOp(semid, CLIMUTEX, 1);
   }
 
 
