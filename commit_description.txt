@@ -1,1 +1,0 @@
-Ora la comunicazione su fifo è impostata e funziona. Ora bisogna effettivamente comunicare

@@ -38,13 +38,15 @@ int main (int argc, char *argv[]) {
     errExit("Server failed to open FIFOCLIENT in write-only mode");
 
 
-  /*
-   *
-   *
-   * CORPO DEL SERVER
-   *
-   *
-  */
+  while (1){  // continua a controllare richieste dei client
+    /*
+     *
+     *
+     * CORPO DEL SERVER
+     *
+     *
+     */
+  }
 
 
   // chiudo FIFOCLIENT, chiudo ed elimino FIFOSERVER
