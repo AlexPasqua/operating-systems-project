@@ -23,7 +23,7 @@ int main (int argc, char *argv[]) {
     errExit("sigprocmask failed");
 
 
-  // creo FIFOSERVER, apro FIFOSERVER, apro FIFOCLIENT
+  // creo FIFOSERVER, apro FIFOSERVER
   char *fifoserv_pathname = "/tmp/FIFOSERVER";
   char *fifocli_pathname = "/tmp/FIFOCLIENT";
   if (mkfifo(fifoserv_pathname, S_IRUSR | S_IWUSR) == -1)
@@ -33,26 +33,23 @@ int main (int argc, char *argv[]) {
   if (fifoserver == -1)
     errExit("Server failed to open FIFOSERVER in read-only mode");
 
-  int fifoclient = open(fifocli_pathname, O_WRONLY);
-  if (fifoclient == -1)
-    errExit("Server failed to open FIFOCLIENT in write-only mode");
+
+  // continua a controllare richieste dei client
+  while (1){
+    // apro FIFOCLIENT
+    int fifoclient = open(fifocli_pathname, O_WRONLY);
+    if (fifoclient == -1)
+      errExit("Server failed to open FIFOCLIENT in write-only mode");
 
 
-  while (1){  // continua a controllare richieste dei client
-    /*
-     *
-     *
-     * CORPO DEL SERVER
-     *
-     *
-     */
+
+     // chiudo FIFOCLIENT
+     if (close(fifoclient) == -1)
+       errExit("Server failed to close FIFOCLIENT");
   }
 
 
-  // chiudo FIFOCLIENT, chiudo ed elimino FIFOSERVER
-  if (close(fifoclient) == -1)
-    errExit("Server failed to close FIFOCLIENT");
-
+  // chiudo ed elimino FIFOSERVER
   if (close(fifoserver) == -1)
     errExit("Server failed to close FIFOSERVER");
 
