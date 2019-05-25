@@ -32,9 +32,9 @@ int main (int argc, char *argv[]) {
 
     struct Request req;
 
-    // inserimento user_id
+    // inserimento user
     printf("\n\nInserire codice identificativo utente: ");
-    scanf("%s", req.user_id);
+    scanf("%s", req.user);
 
     // selezione servizio
     do {
@@ -73,16 +73,11 @@ int main (int argc, char *argv[]) {
       errExit("ClientReq failed to open FIFOCLIENT in read-only mode");
 
 
-    // TEST
-    write(fifoserver, &req, sizeof(struct Request));
 
-    /*
-     *
-     *
-     * COMUNICAZIONE CLIENT - SERVER
-     *
-     *
-    */
+    // invio i dati al server
+    if (write(fifoserver, &req, sizeof(struct Request)) != sizeof(struct Request))
+      errExit("Client failed to write correctly on FIFOSERVER");
+
 
 
     // chiudo FIFOSERVER, chiudo ed elimino FIFOCLIENT

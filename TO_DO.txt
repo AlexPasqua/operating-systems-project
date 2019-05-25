@@ -1,2 +1,4 @@
 -elimina le righe di codice (da rever e client) commentate con //TEST
 -comincia a comunicare roba vera
+
+-prova a usare una funz esterna per leggere le fifo in modo da non dover scrivere sempre tutta la trafila di controlli

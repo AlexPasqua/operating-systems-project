@@ -14,6 +14,8 @@
 
 
 int main (int argc, char *argv[]) {
+  printf("Server ready!\n");
+
   // blocco tutti i signal tranne SIGTERM
   sigset_t signal_set;
   if (sigfillset(&signal_set) == -1)
@@ -56,6 +58,8 @@ int main (int argc, char *argv[]) {
 
 
   // continua a controllare richieste dei client
+  char user[USR_STRDIM], service[SRV_STRDIM], key[K_STRDIM];
+  int bR;
   while (1){
     // blocco il server finché un client non crea FIFOCLIENT
     semOp(semid, SRVSEM, -1);
@@ -65,12 +69,17 @@ int main (int argc, char *argv[]) {
     if (fifoclient == -1)
       errExit("Server failed to open FIFOCLIENT in write-only mode");
 
-    // TEST
-    char usr[USRID_STRDIM];
-    char srv[SRV_STRDIM];
-    read(fifoserver, usr, USRID_STRDIM);
-    read(fifoserver, srv, SRV_STRDIM);
-    printf("%s\t-\t%s\n", usr, srv);
+    // leggo i dati dal server
+    bR = read(fifoserver, user, USR_STRDIM);
+    if (bR == -1) { errExit("Server failed to perdorm a read from FIFOSERVER"); }
+    else if (bR != USR_STRDIM) { errExit("Looks like server didn't received a struct Request correctly"); }
+
+    bR = read(fifoserver, service, SRV_STRDIM);
+    if (bR == -1) { errExit("Server failed to perdorm a read from FIFOSERVER"); }
+    else if (bR != SRV_STRDIM) { errExit("Looks like server didn't received a struct Request correctly"); }
+
+    printf("%s\t-\t%s\n", user, service);
+
 
      // chiudo FIFOCLIENT
      if (close(fifoclient) == -1)
