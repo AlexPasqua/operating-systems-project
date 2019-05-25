@@ -1,4 +1,3 @@
--elimina le righe di codice (da rever e client) commentate con //TEST
--comincia a comunicare roba vera
-
+-risolvi i problemi di invio della chiave
 -prova a usare una funz esterna per leggere le fifo in modo da non dover scrivere sempre tutta la trafila di controlli
+-fai creare al server delle chiavi vere

@@ -14,7 +14,7 @@
 
 
 int main (int argc, char *argv[]) {
-  printf("Server ready!\n");
+  printf("Server ready!\n\n");
 
   // blocco tutti i signal tranne SIGTERM
   sigset_t signal_set;
@@ -58,7 +58,8 @@ int main (int argc, char *argv[]) {
 
 
   // continua a controllare richieste dei client
-  char user[USR_STRDIM], service[SRV_STRDIM], key[K_STRDIM];
+  char user[USR_STRDIM], service[SRV_STRDIM];
+  struct Response resp;
   int bR;
   while (1){
     // blocco il server finché un client non crea FIFOCLIENT
@@ -78,15 +79,22 @@ int main (int argc, char *argv[]) {
     if (bR == -1) { errExit("Server failed to perdorm a read from FIFOSERVER"); }
     else if (bR != SRV_STRDIM) { errExit("Looks like server didn't received a struct Request correctly"); }
 
-    printf("%s\t-\t%s\n", user, service);
+    printf("%s - %s, sto generando una chiave di utilizzo...\n", user, service);
 
+    // mando la chiave al Client
+    // per ora è una chiave di TEST. TO_DO -> genera chiavi vere
+    resp.key = "1234";
+    if (write(fifoclient, &resp, sizeof(resp)) != sizeof(resp))
+      errExit("Server failed to write on FIFOCLIENT");
 
-     // chiudo FIFOCLIENT
-     if (close(fifoclient) == -1)
-       errExit("Server failed to close FIFOCLIENT");
+    printf("KEY = %s\n\n", resp.key);
 
-     // sblocco un client in attesa
-     semOp(semid, CLIMUTEX, 1);
+    // chiudo FIFOCLIENT
+    if (close(fifoclient) == -1)
+      errExit("Server failed to close FIFOCLIENT");
+
+    // sblocco un client in attesa
+    semOp(semid, CLIMUTEX, 1);
   }
 
 
