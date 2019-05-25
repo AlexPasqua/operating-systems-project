@@ -1,2 +1,1 @@
-clientReq:
-	-Inserimento servizio con funzione apposita per controllare le stringhe
+Ora la comunicazione su fifo è impostata e funziona. Ora bisogna effettivamente comunicare

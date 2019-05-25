@@ -8,10 +8,7 @@
 #include <fcntl.h>
 
 #include "errExit.h"
-
-
-// struct per comunicare i dati al server tramite FIFOSERVER
-struct Request { char user_id[50], service[50]; };
+#include "myfifo.h"
 
 
 // funz per controllare l'inserimento del servizio richiesto

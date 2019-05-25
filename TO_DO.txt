@@ -1,0 +1,1 @@
+-Cominciare la comunicazione su fifo (che funzionano correttamente)

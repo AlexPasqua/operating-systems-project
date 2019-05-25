@@ -7,6 +7,7 @@
 #include <fcntl.h>
 
 #include "errExit.h"
+#include "myfifo.h"
 
 
 int main (int argc, char *argv[]) {
