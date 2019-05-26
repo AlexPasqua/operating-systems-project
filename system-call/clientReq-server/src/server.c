@@ -93,10 +93,6 @@ int main (int argc, char *argv[]) {
      *  (sono già sicuro che le stringhe siano corrette)
      */
     srand(time(NULL));
-    /*resp.key = ((time(NULL) * 10000) + (user[0] * 1000) +
-               (service[0] == 'i') ? 100 : ((service[1] == 't') ? 0 : 10) +
-               (rand() % 10))
-               % TEN_BILLIONS;*/
      resp.key = ((time(NULL) * 100000) + (user[0] * 100) +
                 ((service[0] == 'i') ? 20 : ((service[1] == 't') ? 0 : 10)) + (rand() % 10))
                 % THOUSAND_BILLIONS;
