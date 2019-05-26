@@ -97,8 +97,9 @@ int main (int argc, char *argv[]) {
                (service[0] == 'i') ? 100 : ((service[1] == 't') ? 0 : 10) +
                (rand() % 10))
                % TEN_BILLIONS;*/
-     resp.key = (time(NULL) * 100000) + (user[0] * 100) +
-                ( (service[0] == 'i') ? 20 : ((service[1] == 't') ? 0 : 10) ) + (rand() % 10);
+     resp.key = ((time(NULL) * 100000) + (user[0] * 100) +
+                ((service[0] == 'i') ? 20 : ((service[1] == 't') ? 0 : 10)) + (rand() % 10))
+                % THOUSAND_BILLIONS;
 
     if (write(fifoclient, &resp, sizeof(struct Response)) != sizeof(struct Response))
       errExit("Server failed to write on FIFOCLIENT");
