@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
+#include <time.h>
 
 #include "errExit.h"
 #include "myfifo.h"
