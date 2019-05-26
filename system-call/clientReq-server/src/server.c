@@ -13,7 +13,7 @@
 #include "myfifo.h"
 #include "semaphores.h"
 
-#define TEN_BILLIONS 10000000000
+#define THOUSAND_BILLIONS 1000000000000
 
 
 int main (int argc, char *argv[]) {
