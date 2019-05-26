@@ -13,6 +13,8 @@
 #include "myfifo.h"
 #include "semaphores.h"
 
+#define TEN_BILLIONS 10000000000
+
 
 int main (int argc, char *argv[]) {
   printf("Server ready!\n\n");
@@ -82,13 +84,25 @@ int main (int argc, char *argv[]) {
 
     printf("%s - %s, sto generando una chiave di utilizzo...\n", user, service);
 
-    // mando la chiave al Client
-    // per ora è una chiave di TEST. TO_DO -> genera chiavi vere
-    resp.key = 1234;
+    /* genero la chiave:
+     *  prendo il timestamp, a cui accodo il numero corrispondente all'iniziale
+     *  dello user, altre 2 cifre per indicare il servizio (00=stampa, 01=salva, 10=invia)
+     *  e una cifra casuale. Dopodiché elimino le prime 3 cifre (che sono sempre uguali)
+     *
+     *  per il servizio controllo solo i primi 2 caratteri di service
+     *  (sono già sicuro che le stringhe siano corrette)
+     */
+    srand(time(NULL));
+    /*resp.key = ((time(NULL) * 10000) + (user[0] * 1000) +
+               (service[0] == 'i') ? 100 : ((service[1] == 't') ? 0 : 10) +
+               (rand() % 10))
+               % TEN_BILLIONS;*/
+     resp.key = (time(NULL) * 10000);
+
     if (write(fifoclient, &resp, sizeof(struct Response)) != sizeof(struct Response))
       errExit("Server failed to write on FIFOCLIENT");
 
-    printf("KEY = %u\n\n", resp.key);
+    printf("KEY = %lu\n\n", resp.key);
 
     // chiudo FIFOCLIENT
     if (close(fifoclient) == -1)
