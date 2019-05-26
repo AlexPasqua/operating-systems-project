@@ -86,7 +86,7 @@ int main (int argc, char *argv[]) {
 
     /* genero la chiave:
      *  prendo il timestamp, a cui accodo il numero corrispondente all'iniziale
-     *  dello user, altre 2 cifre per indicare il servizio (00=stampa, 01=salva, 10=invia)
+     *  dello user, una cifra per il servizio (0=stampa, 1=salva, 2=invia)
      *  e una cifra casuale. Dopodiché elimino le prime 3 cifre (che sono sempre uguali)
      *
      *  per il servizio controllo solo i primi 2 caratteri di service
@@ -97,7 +97,7 @@ int main (int argc, char *argv[]) {
                (service[0] == 'i') ? 100 : ((service[1] == 't') ? 0 : 10) +
                (rand() % 10))
                % TEN_BILLIONS;*/
-     resp.key = (time(NULL) * 10000);
+     resp.key = (time(NULL) * 1000);
 
     if (write(fifoclient, &resp, sizeof(struct Response)) != sizeof(struct Response))
       errExit("Server failed to write on FIFOCLIENT");
