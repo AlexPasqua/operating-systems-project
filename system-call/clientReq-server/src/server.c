@@ -83,11 +83,11 @@ int main (int argc, char *argv[]) {
 
     // mando la chiave al Client
     // per ora è una chiave di TEST. TO_DO -> genera chiavi vere
-    resp.key = "1234";
-    if (write(fifoclient, &resp, sizeof(resp)) != sizeof(resp))
+    resp.key = 1234;
+    if (write(fifoclient, &resp, sizeof(struct Response)) != sizeof(struct Response))
       errExit("Server failed to write on FIFOCLIENT");
 
-    printf("KEY = %s\n\n", resp.key);
+    printf("KEY = %u\n\n", resp.key);
 
     // chiudo FIFOCLIENT
     if (close(fifoclient) == -1)

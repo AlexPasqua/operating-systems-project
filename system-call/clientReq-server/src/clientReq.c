@@ -27,9 +27,9 @@ bool check_service_input(char *service){
 }
 
 // funz per stampare il riepilogo dei dati -------------------------------------
-void print_recap(char *user, char *service, char *key){
+void print_recap(char *user, char *service, unsigned int key){
   printf("\n\ncodice identificativo: %s\nservizio: %s\n", user, service);
-  printf("chiave rilasciata dal server: %s\n\n", key);
+  printf("chiave rilasciata dal server: %u\n\n", key);
 }
 
 //------------------------------------------------------------------------------
@@ -85,15 +85,12 @@ int main (int argc, char *argv[]) {
       errExit("Client failed to write correctly on FIFOSERVER");
 
     // legga la risposta del server (chiave)
-    char key[K_STRDIM];
-    int bR = read(fifoclient, key, K_STRDIM);
+    unsigned int key;
+    int bR = read(fifoclient, &key, sizeof(unsigned int));
     if (bR == -1) { errExit("Client failed to read key from FIFOCLIENT"); }
-    else if (bR != K_STRDIM) { errExit("Looks like client didn't received a key correctly"); }
+    else if (bR != sizeof(unsigned int)) { errExit("Looks like client didn't received a key correctly"); }
 
-    char *k = strtok(key, "3");
-    for (int i = 0; i < strlen(key); i++)
-      printf("%c", k[i]);
-    print_recap(req.user, req.service, k);
+    print_recap(req.user, req.service, key);
 
 
 
