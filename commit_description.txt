@@ -1,0 +1,2 @@
+PROBLEMA: nella close_all (che dovrebbe essere un signal handler) ci va solo il keymanager (figlio del server) e non il padre...perché?
+In più sarebbe bello usare anche un exit handler (chiamato da un exit() nel signal handler)

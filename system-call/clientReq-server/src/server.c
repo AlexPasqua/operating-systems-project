@@ -28,8 +28,16 @@ argomento perché la funzione è chiamata da un signal handler che per costruzio
 ha un solo argomento (il signal)*/
 
 
+
+//------------------------------------------------------------------------------
 // funz per le operazioni pre-chiusura del processo
 void close_all(int sig){
+  //TEST
+  if (km_pid == 0)
+    printf("FIGLIO\n");
+  else
+    printf("PADRE\n");
+
   // chiudo FIFOCLIENT
   close(fifoclient);  //niente controllo perché potrebbe essere già stata chiusa nel while
 
@@ -93,15 +101,14 @@ int main (int argc, char *argv[]) {
 
 
 
-  // creo KeyManager
+  // CREO KEYMANAGER
   pid_t km_pid = fork();
   if (km_pid == -1)
     errExit("Server: fork() failed");
 
   else if (km_pid == 0){
     //----KEY MANAGER SECTION
-
-
+    while (1);
 
   }
   else{
@@ -136,10 +143,7 @@ int main (int argc, char *argv[]) {
 
 
 
-
-
-
-    // continua a controllare richieste dei client
+    // continua a controllare richieste dei client------------------------------
     struct Request client_data;
     struct Response resp;
     int bR, entry_idx = 0;
@@ -187,7 +191,7 @@ int main (int argc, char *argv[]) {
 
       // sblocco un client in attesa
       semOp(semid, CLIMUTEX, 1);
-    }
+    } //------------------------------------- chiusura while -------------------
 
     /* non si esce mai da while a meno che non arrivi un SIGTERM,
     ma in tal caso il processo termina dopo aver eseguito close_all */
