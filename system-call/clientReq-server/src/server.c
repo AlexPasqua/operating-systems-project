@@ -8,10 +8,12 @@
 #include <sys/ipc.h>
 #include <sys/sem.h>
 #include <time.h>
+#include <sys/shm.h>
 
 #include "errExit.h"
 #include "myfifo.h"
 #include "semaphores.h"
+#include "sha_mem.h"
 
 #define THOUSAND_BILLIONS 1000000000000
 
@@ -48,6 +50,20 @@ int main (int argc, char *argv[]) {
     errExit("Server failed to set semaphores values");
 
 
+  // creo e "attacco" il segmento di memoria condivisa
+  key_t shm_key = ftok("src/server.c", 'a');
+  if (shm_key == -1)
+    errExit("Server failed to create a key for the shared mem segment");
+
+  int shmid = shmget(shm_key, 20 * sizeof(struct Entry), IPC_CREAT | S_IRUSR | S_IWUSR);
+  if (shmid == -1)
+    errExit("Server: shmget failed");
+
+  struct Entry *shmptr = (struct Entry *) shmat(shmid, NULL, 0);
+  if (shmptr == (void *)(-1))
+    errExit("Server: shmat failed");
+
+
   // creo FIFOSERVER, apro FIFOSERVER
   char *fifoserv_pathname = "/tmp/FIFOSERVER";
   char *fifocli_pathname = "/tmp/FIFOCLIENT";
@@ -78,6 +94,7 @@ int main (int argc, char *argv[]) {
     if (bR == -1) { errExit("Server failed to perdorm a read from FIFOSERVER"); }
     else if (bR != sizeof(struct Request)) { errExit("Looks like server didn't received a struct Request correctly"); }
 
+
     printf("%s - %s, sto generando una chiave di utilizzo...\n", client_data.user, client_data.service);
 
     /* genero la chiave:
@@ -89,9 +106,9 @@ int main (int argc, char *argv[]) {
      *  (sono già sicuro che le stringhe siano corrette)
      */
     srand(time(NULL));
-     resp.key = ((time(NULL) * 100000) + (client_data.user[0] * 100) +
-                ((client_data.service[0] == 'i') ? 20 : ((client_data.service[1] == 't') ? 0 : 10)) +
-                (rand() % 10)) % THOUSAND_BILLIONS;
+    resp.key = ((time(NULL) * 100000) + (client_data.user[0] * 100) +
+               ((client_data.service[0] == 'i') ? 20 : ((client_data.service[1] == 't') ? 0 : 10)) +
+               (rand() % 10)) % THOUSAND_BILLIONS;
 
     if (write(fifoclient, &resp, sizeof(struct Response)) != sizeof(struct Response))
       errExit("Server failed to write on FIFOCLIENT");
@@ -115,9 +132,17 @@ int main (int argc, char *argv[]) {
   if (unlink(fifoserv_pathname) != 0)
     errExit("Server failed to unlink FIFOSERVER");
 
-  // elimino il set di semafori
+  // elimino il set di semafori per le FIFO
   if (semctl(semid, 0/*ignored*/, IPC_RMID, NULL) == -1)
     errExit("Server failed to remove semaphores set");
+
+  // detach & delete memoria condivisa
+  if (shmdt(shmptr) != 0)
+    errExit("Server: shmdt failed");
+
+  if (shmctl(shmid, IPC_RMID, NULL) != 0)
+    errExit("Server failed to delete shared memory segment");
+  
 
   return 0;
 }
