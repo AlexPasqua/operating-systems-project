@@ -20,7 +20,7 @@
 
 // variabili globali
 pid_t km_pid;
-int fifoserver, semid, shmid;
+int fifoserver, fifoclient, semid, shmid;
 char *fifoserv_pathname;
 struct Entry *shmptr;
 /*sono glibali perché servono in "close_all()", ma non posso passarle per
@@ -29,10 +29,9 @@ ha un solo argomento (il signal)*/
 
 
 // funz per le operazioni pre-chiusura del processo
-void close_all(){
-  // aspetto la terminazione di KeyManager per non farlo diverntare orfano
-  if (waitpid(km_pid, NULL, 0) == -1)
-    errExit("Server: waitpid() failed");
+void close_all(int sig){
+  // chiudo FIFOCLIENT
+  close(fifoclient);  //niente controllo perché potrebbe essere già stata chiusa nel while
 
   // chiudo ed elimino FIFOSERVER
   if (close(fifoserver) == -1)
@@ -45,19 +44,25 @@ void close_all(){
   if (semctl(semid, 0/*ignored*/, IPC_RMID, NULL) == -1)
     errExit("Server failed to remove semaphores set");
 
+  // aspetto la terminazione di KeyManager per non farlo diverntare orfano
+  if (waitpid(km_pid, NULL, 0) == -1)
+    errExit("Server: waitpid() failed");
+
   // detach & delete memoria condivisa
   if (shmdt(shmptr) != 0)
     errExit("Server: shmdt failed");
 
   if (shmctl(shmid, IPC_RMID, NULL) != 0)
     errExit("Server failed to delete shared memory segment");
+
+  exit(1);
 }
 
 //------------------------------------------------------------------------------
 int main (int argc, char *argv[]) {
   printf("Server ready!\n\n");
 
-  // blocco tutti i signal tranne SIGTERM
+  // blocco tutti i signal tranne SIGTERM e imposto il suo signal handler
   sigset_t signal_set;
   if (sigfillset(&signal_set) == -1)
     errExit("sigfillset failed");
@@ -67,6 +72,9 @@ int main (int argc, char *argv[]) {
 
   if (sigprocmask(SIG_SETMASK, &signal_set, NULL) == -1)
     errExit("sigprocmask failed");
+
+  if (signal(SIGTERM, close_all) == SIG_ERR)
+    errExit("Server: signal handler setting failed");
 
 
   // creo il segmento di memoria condivisa
@@ -78,7 +86,10 @@ int main (int argc, char *argv[]) {
   if (shmid == -1)
     errExit("Server: shmget failed");
 
-
+  // "attach" della memoria condivisa
+  shmptr = (struct Entry *) shmat(shmid, NULL, 0);
+  if (shmptr == (void *)(-1))
+    errExit("Server: shmat failed");
 
 
 
@@ -90,10 +101,7 @@ int main (int argc, char *argv[]) {
   else if (km_pid == 0){
     //----KEY MANAGER SECTION
 
-    // "attach" della memoria condivisa
-    struct Entry *shmptr = (struct Entry *) shmat(shmid, NULL, 0);
-    if (shmptr == (void *)(-1))
-      errExit("Server: shmat failed");
+
 
   }
   else{
@@ -117,7 +125,7 @@ int main (int argc, char *argv[]) {
 
 
     // creo e apro FIFOSERVER
-    char *fifoserv_pathname = "/tmp/FIFOSERVER";
+    fifoserv_pathname = "/tmp/FIFOSERVER";  // (var globale)
     char *fifocli_pathname = "/tmp/FIFOCLIENT";
     if (mkfifo(fifoserv_pathname, S_IRUSR | S_IWUSR) == -1)
       errExit("mkfifo (FIFOSERVER) failed");
@@ -127,10 +135,7 @@ int main (int argc, char *argv[]) {
       errExit("Server failed to open FIFOSERVER in read-only mode");
 
 
-    // "attach" della memoria condivisa
-    struct Entry *shmptr = (struct Entry *) shmat(shmid, NULL, 0);
-    if (shmptr == (void *)(-1))
-      errExit("Server: shmat failed");
+
 
 
 
@@ -143,7 +148,7 @@ int main (int argc, char *argv[]) {
       semOp(semid, SRVSEM, -1);
 
       // apro FIFOCLIENT
-      int fifoclient = open(fifocli_pathname, O_WRONLY);
+      fifoclient = open(fifocli_pathname, O_WRONLY);
       if (fifoclient == -1)
         errExit("Server failed to open FIFOCLIENT in write-only mode");
 
@@ -151,7 +156,6 @@ int main (int argc, char *argv[]) {
       bR = read(fifoserver, &client_data, sizeof(struct Request));
       if (bR == -1) { errExit("Server failed to perdorm a read from FIFOSERVER"); }
       else if (bR != sizeof(struct Request)) { errExit("Looks like server didn't received a struct Request correctly"); }
-
 
       printf("%s - %s, sto generando una chiave di utilizzo...\n", client_data.user, client_data.service);
 
@@ -185,9 +189,9 @@ int main (int argc, char *argv[]) {
       semOp(semid, CLIMUTEX, 1);
     }
 
-    close_all();
+    /* non si esce mai da while a meno che non arrivi un SIGTERM,
+    ma in tal caso il processo termina dopo aver eseguito close_all */
   }
-
 
   return 0;
 }

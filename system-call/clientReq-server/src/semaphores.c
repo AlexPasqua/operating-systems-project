@@ -1,4 +1,5 @@
 #include <sys/sem.h>
+#include <errno.h>
 
 #include "semaphore.h"
 #include "errExit.h"
