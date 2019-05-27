@@ -1,4 +1,1 @@
--fai la lettura dalle fifo mettendo i dati in struct e ...
-    -prova a usare una funz esterna per leggere le fifo in modo da non dover scrivere sempre tutta la trafila di controlli
-
 -KEY MANAGER

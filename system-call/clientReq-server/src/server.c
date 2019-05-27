@@ -61,7 +61,7 @@ int main (int argc, char *argv[]) {
 
 
   // continua a controllare richieste dei client
-  char user[USR_STRDIM], service[SRV_STRDIM];
+  struct Request client_data;
   struct Response resp;
   int bR;
   while (1){
@@ -74,15 +74,11 @@ int main (int argc, char *argv[]) {
       errExit("Server failed to open FIFOCLIENT in write-only mode");
 
     // leggo i dati dal server
-    bR = read(fifoserver, user, USR_STRDIM);
+    bR = read(fifoserver, &client_data, sizeof(struct Request));
     if (bR == -1) { errExit("Server failed to perdorm a read from FIFOSERVER"); }
-    else if (bR != USR_STRDIM) { errExit("Looks like server didn't received a struct Request correctly"); }
+    else if (bR != sizeof(struct Request)) { errExit("Looks like server didn't received a struct Request correctly"); }
 
-    bR = read(fifoserver, service, SRV_STRDIM);
-    if (bR == -1) { errExit("Server failed to perdorm a read from FIFOSERVER"); }
-    else if (bR != SRV_STRDIM) { errExit("Looks like server didn't received a struct Request correctly"); }
-
-    printf("%s - %s, sto generando una chiave di utilizzo...\n", user, service);
+    printf("%s - %s, sto generando una chiave di utilizzo...\n", client_data.user, client_data.service);
 
     /* genero la chiave:
      *  prendo il timestamp, accodo il numero corrispondente all'iniziale
@@ -93,9 +89,9 @@ int main (int argc, char *argv[]) {
      *  (sono già sicuro che le stringhe siano corrette)
      */
     srand(time(NULL));
-     resp.key = ((time(NULL) * 100000) + (user[0] * 100) +
-                ((service[0] == 'i') ? 20 : ((service[1] == 't') ? 0 : 10)) + (rand() % 10))
-                % THOUSAND_BILLIONS;
+     resp.key = ((time(NULL) * 100000) + (client_data.user[0] * 100) +
+                ((client_data.service[0] == 'i') ? 20 : ((client_data.service[1] == 't') ? 0 : 10)) +
+                (rand() % 10)) % THOUSAND_BILLIONS;
 
     if (write(fifoclient, &resp, sizeof(struct Response)) != sizeof(struct Response))
       errExit("Server failed to write on FIFOCLIENT");
