@@ -1,1 +1,1 @@
--KEY MANAGER
+-crea semafori per mem condivisa

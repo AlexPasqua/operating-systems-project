@@ -55,7 +55,7 @@ int main (int argc, char *argv[]) {
   if (shm_key == -1)
     errExit("Server failed to create a key for the shared mem segment");
 
-  int shmid = shmget(shm_key, 20 * sizeof(struct Entry), IPC_CREAT | S_IRUSR | S_IWUSR);
+  int shmid = shmget(shm_key, SHMDIM * sizeof(struct Entry), IPC_CREAT | S_IRUSR | S_IWUSR);
   if (shmid == -1)
     errExit("Server: shmget failed");
 
@@ -79,7 +79,7 @@ int main (int argc, char *argv[]) {
   // continua a controllare richieste dei client
   struct Request client_data;
   struct Response resp;
-  int bR;
+  int bR, entry_idx = 0;
   while (1){
     // blocco il server finché un client non crea FIFOCLIENT
     semOp(semid, SRVSEM, -1);
@@ -105,11 +105,15 @@ int main (int argc, char *argv[]) {
      *  per il servizio controllo solo i primi 2 caratteri di service
      *  (sono già sicuro che le stringhe siano corrette)
      */
-    srand(time(NULL));
-    resp.key = ((time(NULL) * 100000) + (client_data.user[0] * 100) +
+    unsigned long timestamp = time(NULL);
+    srand(timestamp);
+    resp.key = ((timestamp * 100000) + (client_data.user[0] * 100) +
                ((client_data.service[0] == 'i') ? 20 : ((client_data.service[1] == 't') ? 0 : 10)) +
                (rand() % 10)) % THOUSAND_BILLIONS;
 
+    //TO_DO->scrivi su memoria condivisa (occhio ai semafori)
+
+    // rispondo al client
     if (write(fifoclient, &resp, sizeof(struct Response)) != sizeof(struct Response))
       errExit("Server failed to write on FIFOCLIENT");
 
@@ -142,7 +146,7 @@ int main (int argc, char *argv[]) {
 
   if (shmctl(shmid, IPC_RMID, NULL) != 0)
     errExit("Server failed to delete shared memory segment");
-  
+
 
   return 0;
 }

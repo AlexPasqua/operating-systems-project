@@ -1,2 +1,0 @@
-created sha_mem.h header
-in server.c: created, attached & detached shared memory segment
