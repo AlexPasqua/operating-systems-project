@@ -64,12 +64,18 @@ int main (int argc, char *argv[]) {
     errExit("Server: shmat failed");
 
 
-  // creo FIFOSERVER, apro FIFOSERVER
+  // creo FIFOSERVER
   char *fifoserv_pathname = "/tmp/FIFOSERVER";
   char *fifocli_pathname = "/tmp/FIFOCLIENT";
   if (mkfifo(fifoserv_pathname, S_IRUSR | S_IWUSR) == -1)
     errExit("mkfifo (FIFOSERVER) failed");
 
+
+  // creo KeyManager
+  
+
+
+  // apro FIFOSERVER
   int fifoserver = open(fifoserv_pathname, O_RDONLY);
   if (fifoserver == -1)
     errExit("Server failed to open FIFOSERVER in read-only mode");
