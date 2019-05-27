@@ -1,3 +1,4 @@
+-in server, crea una funz per chiudere tutti i file descriptor ecc
 -crea signal handler per inoltrare SIGTERM anche a KeyManager
 -comincia clientExec per poi vedere come creare i sem per la mem condivisa
 -crea semafori per mem condivisa

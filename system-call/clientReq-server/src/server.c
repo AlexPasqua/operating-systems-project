@@ -18,7 +18,42 @@
 
 #define THOUSAND_BILLIONS 1000000000000
 
+// variabili globali
+pid_t km_pid;
+int fifoserver, semid, shmid;
+char *fifoserv_pathname;
+struct Entry *shmptr;
+/*sono glibali perché servono in "close_all()", ma non posso passarle per
+argomento perché la funzione è chiamata da un signal handler che per costruzione
+ha un solo argomento (il signal)*/
 
+
+// funz per le operazioni pre-chiusura del processo
+void close_all(){
+  // aspetto la terminazione di KeyManager per non farlo diverntare orfano
+  if (waitpid(km_pid, NULL, 0) == -1)
+    errExit("Server: waitpid() failed");
+
+  // chiudo ed elimino FIFOSERVER
+  if (close(fifoserver) == -1)
+    errExit("Server failed to close FIFOSERVER");
+
+  if (unlink(fifoserv_pathname) != 0)
+    errExit("Server failed to unlink FIFOSERVER");
+
+  // elimino il set di semafori per le FIFO
+  if (semctl(semid, 0/*ignored*/, IPC_RMID, NULL) == -1)
+    errExit("Server failed to remove semaphores set");
+
+  // detach & delete memoria condivisa
+  if (shmdt(shmptr) != 0)
+    errExit("Server: shmdt failed");
+
+  if (shmctl(shmid, IPC_RMID, NULL) != 0)
+    errExit("Server failed to delete shared memory segment");
+}
+
+//------------------------------------------------------------------------------
 int main (int argc, char *argv[]) {
   printf("Server ready!\n\n");
 
@@ -150,29 +185,7 @@ int main (int argc, char *argv[]) {
       semOp(semid, CLIMUTEX, 1);
     }
 
-
-
-    // aspetto la terminazione di KeyManager per non farlo diverntare orfano
-    if (waitpid(km_pid, NULL, 0) == -1)
-      errExit("Server: waitpid() failed");
-
-    // chiudo ed elimino FIFOSERVER
-    if (close(fifoserver) == -1)
-      errExit("Server failed to close FIFOSERVER");
-
-    if (unlink(fifoserv_pathname) != 0)
-      errExit("Server failed to unlink FIFOSERVER");
-
-    // elimino il set di semafori per le FIFO
-    if (semctl(semid, 0/*ignored*/, IPC_RMID, NULL) == -1)
-      errExit("Server failed to remove semaphores set");
-
-    // detach & delete memoria condivisa
-    if (shmdt(shmptr) != 0)
-      errExit("Server: shmdt failed");
-
-    if (shmctl(shmid, IPC_RMID, NULL) != 0)
-      errExit("Server failed to delete shared memory segment");
+    close_all();
   }
 
 

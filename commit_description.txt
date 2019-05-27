@@ -1,2 +1,0 @@
-Fatto la fork(), creato sezione padre e sezione figlio.
-L'attach della memoria condivisa viene fatto sia da server che da keyManager
