@@ -1,9 +1,8 @@
-CODE_CLEANING:
-	-crea più funzioni per il server
-
--in server, MIGLIORA la funz per chiudere tutti i file descriptor ecc usando gli exit handler
--crea signal handler per inoltrare SIGTERM anche a KeyManager
 -comincia clientExec per poi vedere come creare i sem per la mem condivisa
 -crea semafori per mem condivisa
 -comunica su mem condivisa
+
+-in server, MIGLIORA la funz per chiudere tutti i file descriptor ecc usando gli exit handler
+-crea signal handler per inoltrare SIGTERM anche a KeyManager
+
 -valuta di creare keyManager in un altro punto di server per non fargli ereditare i file descriptor di FIFOSERVER ecc
