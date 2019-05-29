@@ -14,6 +14,7 @@
 #include "semaphores.h"
 
 
+//==============================================================================
 // funz per controllare l'inserimento del servizio richiesto
 bool check_service_input(char *service){
   char *avail_servs[] = {"stampa", "salva", "invia"};
@@ -26,18 +27,20 @@ bool check_service_input(char *service){
   return false;
 }
 
-// funz per stampare il riepilogo dei dati -------------------------------------
+//==============================================================================
+// funz per stampare il riepilogo dei dati
 void print_recap(struct Request req, struct Response resp){
   printf("\n\ncodice identificativo: %s\nservizio: %s\n", req.user, req.service);
   printf("chiave rilasciata dal server: %lu\n\n", resp.key);
 }
 
-//------------------------------------------------------------------------------
+//==============================================================================
 int main (int argc, char *argv[]) {
     printf("Benvenuto! I servizi disponibili sono i seguenti:\n - stampa\n - salva\n - invia");
 
     struct Request req;
 
+    // inserimento dati ------------------------------------------
     // inserimento user
     printf("\n\nInserire codice identificativo utente: ");
     scanf("%s", req.user);
@@ -48,9 +51,10 @@ int main (int argc, char *argv[]) {
       scanf("%s", req.service);
     }
     while (!check_service_input(req.service));
+    //------------------------------------------------------------
 
 
-    // ottengo l'insieme di semafori creato dal server
+    // ottengo l'insieme di semafori creato dal server -----------
     key_t sem_key = ftok("src/semaphores.c", 'a');
     if (sem_key == -1)
       errExit("Client failed to create a key fot the semaphores set");
@@ -58,12 +62,13 @@ int main (int argc, char *argv[]) {
     int semid = semget(sem_key, 2, S_IRUSR | S_IWUSR);
     if (semid == -1)
       errExit("Client failed to perform semget");
+    //------------------------------------------------------------
 
 
     semOp(semid, CLIMUTEX, -1); //blocco gli altri client mentre uno sta comunicando
 
 
-    // creo FIFOCLIENT, apro FIFOSERVER, apro FIFOCLIENT
+    // creo FIFOCLIENT, apro FIFOSERVER, apro FIFOCLIENT ---------
     char *fifocli_pathname = "/tmp/FIFOCLIENT";
     char *fifoserv_pathname = "/tmp/FIFOSERVER";
     if (mkfifo(fifocli_pathname, S_IRUSR | S_IWUSR) == -1)
@@ -74,27 +79,28 @@ int main (int argc, char *argv[]) {
       errExit("ClientReq failed to open FIFOSERVER in write-only mode");
 
     semOp(semid, SRVSEM, 1);  //sblocco il server in attesa di FIFOCLIENT
+
     int fifoclient = open(fifocli_pathname, O_RDONLY);
     if (fifoclient == -1)
       errExit("ClientReq failed to open FIFOCLIENT in read-only mode");
+    //------------------------------------------------------------
 
 
-
-    // invio i dati al server
+    // invio i dati al server ------------------------------------
     if (write(fifoserver, &req, sizeof(struct Request)) != sizeof(struct Request))
       errExit("Client failed to write correctly on FIFOSERVER");
 
-    // legga la risposta del server (chiave)
+    // leggo la risposta del server (chiave)
     struct Response resp;
     int bR = read(fifoclient, &resp, sizeof(struct Response));
     if (bR == -1) { errExit("Client failed to read key from FIFOCLIENT"); }
     else if (bR != sizeof(struct Response)) { errExit("Looks like client didn't received a key correctly"); }
 
-    print_recap(req, resp);
+    print_recap(req, resp); //stampa riepilogo dati
+    //------------------------------------------------------------
 
 
-
-    // chiudo FIFOSERVER, chiudo ed elimino FIFOCLIENT
+    // chiudo FIFOSERVER, chiudo ed elimino FIFOCLIENT -----------
     if (close(fifoserver) == -1)
       errExit("ClientReq failed to close FIFOSERVER");
 
@@ -103,6 +109,7 @@ int main (int argc, char *argv[]) {
 
     if (unlink(fifocli_pathname) != 0)
       errExit("ClientReq failed to unlink FIFOCLIENT");
+    //------------------------------------------------------------
 
     return 0;
 }

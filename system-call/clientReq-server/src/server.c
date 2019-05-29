@@ -16,6 +16,7 @@
 #include "semaphores.h"
 #include "sha_mem.h"
 
+#define HUNDREAD_THOUSANDS 100000
 #define THOUSAND_BILLIONS 1000000000000
 
 // variabili globali
@@ -28,10 +29,9 @@ ha un solo argomento (il signal)*/
 
 
 
-//------------------------------------------------------------------------------
-// funz per le operazioni pre-chiusura del processo
+//==============================================================================
+// funz per le operazioni pre-chiusura del processo (signal handler)
 void close_all(int sig){
-
   // chiudo FIFOCLIENT
   close(fifoclient);  //niente controllo perché potrebbe essere già stata chiusa nel while
 
@@ -41,6 +41,7 @@ void close_all(int sig){
 
   if (unlink(fifoserv_pathname) != 0)
     errExit("Server failed to unlink FIFOSERVER");
+
 
   // elimino il set di semafori per le FIFO
   if (semctl(semid, 0/*ignored*/, IPC_RMID, NULL) == -1)
@@ -60,11 +61,11 @@ void close_all(int sig){
   exit(1);
 }
 
-//------------------------------------------------------------------------------
+//==============================================================================
 int main (int argc, char *argv[]) {
   printf("Server ready!\n\n");
 
-  // blocco tutti i signal tranne SIGTERM
+  // blocco tutti i signal tranne SIGTERM ------------------------
   sigset_t signal_set;
   if (sigfillset(&signal_set) == -1)
     errExit("sigfillset failed");
@@ -74,11 +75,10 @@ int main (int argc, char *argv[]) {
 
   if (sigprocmask(SIG_SETMASK, &signal_set, NULL) == -1)
     errExit("sigprocmask failed");
+  //--------------------------------------------------------------
 
 
-
-
-  // creo il segmento di memoria condivisa
+  // creo il segmento di memoria condivisa -----------------------
   key_t shm_key = ftok("src/server.c", 'a');
   if (shm_key == -1)
     errExit("Server failed to create a key for the shared mem segment");
@@ -91,10 +91,10 @@ int main (int argc, char *argv[]) {
   shmptr = (struct Entry *) shmat(shmid, NULL, 0);
   if (shmptr == (void *)(-1))
     errExit("Server: shmat failed");
+  //--------------------------------------------------------------
 
 
-
-  // CREO KEYMANAGER
+  // CREO KEYMANAGER ---------------------------------------------
   pid_t km_pid = fork();
   if (km_pid == -1)
     errExit("Server: fork() failed");
@@ -102,7 +102,6 @@ int main (int argc, char *argv[]) {
   else if (km_pid == 0){
     //----KEY MANAGER SECTION
     while (1);
-
   }
   else{
     //----PARENT SECTION
@@ -110,7 +109,7 @@ int main (int argc, char *argv[]) {
     // imposto il signal handler per SIGTERM
     if (signal(SIGTERM, close_all) == SIG_ERR)
       errExit("Server: signal handler setting failed");
-    
+
 
     // creo un insieme di semafori per gestire la comunicaz su FIFO
     key_t sem_key = ftok("src/semaphores.c", 'a');
@@ -127,9 +126,10 @@ int main (int argc, char *argv[]) {
     arg.array = sem_values;
     if (semctl(semid, 0/*ignored*/, SETALL, arg) == -1)
       errExit("Server failed to set semaphores values");
+    //--------------------------------------------------------------
 
 
-    // creo e apro FIFOSERVER
+    // creo e apro FIFOSERVER --------------------------------------
     fifoserv_pathname = "/tmp/FIFOSERVER";  // (var globale)
     char *fifocli_pathname = "/tmp/FIFOCLIENT";
     if (mkfifo(fifoserv_pathname, S_IRUSR | S_IWUSR) == -1)
@@ -138,7 +138,7 @@ int main (int argc, char *argv[]) {
     fifoserver = open(fifoserv_pathname, O_RDONLY);
     if (fifoserver == -1)
       errExit("Server failed to open FIFOSERVER in read-only mode");
-
+    //--------------------------------------------------------------
 
 
     // continua a controllare richieste dei client------------------------------
@@ -164,18 +164,23 @@ int main (int argc, char *argv[]) {
       /* genero la chiave:
        *  prendo il timestamp, accodo il numero corrispondente all'iniziale
        *  dello user, una cifra per il servizio (0=stampa, 1=salva, 2=invia)
-       *  e una cifra casuale. Dopodiché elimino le prime 3 cifre (che sono sempre uguali)
+       *  e una cifra casuale. Dopodiché elimino le prime 3 cifre (che sono sempre uguali
+       *  perché cambiano al passare di mesi/anni)
        *
        *  per il servizio controllo solo i primi 2 caratteri di service
        *  (sono già sicuro che le stringhe siano corrette)
        */
       unsigned long timestamp = time(NULL);
       srand(timestamp);
-      resp.key = ((timestamp * 100000) + (client_data.user[0] * 100) +
+      resp.key = ((timestamp * HUNDREAD_THOUSANDS) + (client_data.user[0] * 100) +
                  ((client_data.service[0] == 'i') ? 20 : ((client_data.service[1] == 't') ? 0 : 10)) +
                  (rand() % 10)) % THOUSAND_BILLIONS;
 
-      //TO_DO->scrivi su memoria condivisa (occhio ai semafori)
+
+      //
+      // TO_DO->scrivi su memoria condivisa (occhio ai semafori)
+      //
+
 
       // rispondo al client
       if (write(fifoclient, &resp, sizeof(struct Response)) != sizeof(struct Response))
@@ -191,8 +196,8 @@ int main (int argc, char *argv[]) {
       semOp(semid, CLIMUTEX, 1);
     } //------------------------------------- chiusura while -------------------
 
-    /* non si esce mai da while a meno che non arrivi un SIGTERM,
-    ma in tal caso il processo termina dopo aver eseguito close_all */
+    /* non si esce mai da while a meno che non arrivi un SIGTERM, ma in tal caso
+    il processo termina dopo aver eseguito close_all (signal handler) */
   }
 
   return 0;

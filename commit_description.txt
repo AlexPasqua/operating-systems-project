@@ -1,1 +1,0 @@
-Put signal handler's setting into the PARENT SECTION and in fixed the problems. Also I commented the waitpid and noticed that a wait is fine

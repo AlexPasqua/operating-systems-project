@@ -1,3 +1,6 @@
+CODE_CLEANING:
+	-crea più funzioni per il server
+
 -in server, MIGLIORA la funz per chiudere tutti i file descriptor ecc usando gli exit handler
 -crea signal handler per inoltrare SIGTERM anche a KeyManager
 -comincia clientExec per poi vedere come creare i sem per la mem condivisa
