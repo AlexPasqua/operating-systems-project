@@ -86,6 +86,24 @@ key_t crt_fifo_semaphores(void){
 }
 
 //==============================================================================
+void generate_key(struct Response *response, struct Request *client_data){
+  /* genero la chiave:
+   *  prendo il timestamp, accodo il numero corrispondente all'iniziale
+   *  dello user, una cifra per il servizio (0=stampa, 1=salva, 2=invia)
+   *  e una cifra casuale. Dopodiché elimino le prime 3 cifre (che sono sempre uguali
+   *  perché cambiano al passare di mesi/anni)
+   *
+   *  per il servizio controllo solo i primi 2 caratteri di service
+   *  (sono già sicuro che le stringhe siano corrette)
+   */
+  unsigned long timestamp = time(NULL);
+  srand(timestamp);
+  response->key = ((timestamp * HUNDREAD_THOUSANDS) + (client_data->user[0] * 100) +
+             ((client_data->service[0] == 'i') ? 20 : ((client_data->service[1] == 't') ? 0 : 10)) +
+             (rand() % 10)) % THOUSAND_BILLIONS;
+}
+
+//==============================================================================
 // funz per le operazioni pre-chiusura del processo (signal handler)
 void close_all(int sig){
   // chiudo FIFOCLIENT
@@ -179,27 +197,15 @@ int main (int argc, char *argv[]) {
       if (fifoclient == -1)
         errExit("Server failed to open FIFOCLIENT in write-only mode");
 
-      // leggo i dati dal server
+      // leggo i dati da fifoserver
       bR = read(fifoserver, &client_data, sizeof(struct Request));
       if (bR == -1) { errExit("Server failed to perdorm a read from FIFOSERVER"); }
       else if (bR != sizeof(struct Request)) { errExit("Looks like server didn't received a struct Request correctly"); }
 
       printf("%s - %s, sto generando una chiave di utilizzo...\n", client_data.user, client_data.service);
 
-      /* genero la chiave:
-       *  prendo il timestamp, accodo il numero corrispondente all'iniziale
-       *  dello user, una cifra per il servizio (0=stampa, 1=salva, 2=invia)
-       *  e una cifra casuale. Dopodiché elimino le prime 3 cifre (che sono sempre uguali
-       *  perché cambiano al passare di mesi/anni)
-       *
-       *  per il servizio controllo solo i primi 2 caratteri di service
-       *  (sono già sicuro che le stringhe siano corrette)
-       */
-      unsigned long timestamp = time(NULL);
-      srand(timestamp);
-      resp.key = ((timestamp * HUNDREAD_THOUSANDS) + (client_data.user[0] * 100) +
-                 ((client_data.service[0] == 'i') ? 20 : ((client_data.service[1] == 't') ? 0 : 10)) +
-                 (rand() % 10)) % THOUSAND_BILLIONS;
+      //genero la chiave di utilizzo
+      generate_key(&resp, &client_data);
 
 
       //
