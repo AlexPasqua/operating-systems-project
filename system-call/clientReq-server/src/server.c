@@ -167,10 +167,8 @@ int main (int argc, char *argv[]) {
     if (signal(SIGTERM, close_all) == SIG_ERR)
       errExit("Server: signal handler setting failed");
 
-
     // creo un insieme di semafori per gestire la comunicaz su FIFO
     key_t sem_key = crt_fifo_semaphores();
-
 
     // creo e apro FIFOSERVER --------------------------------------
     fifoserv_pathname = "/tmp/FIFOSERVER";  // (var globale)
