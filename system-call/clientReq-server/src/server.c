@@ -19,7 +19,6 @@
 #define THOUSAND_BILLIONS 1000000000000
 
 // variabili globali
-pid_t km_pid;
 int fifoserver, fifoclient, semid, shmid;
 char *fifoserv_pathname;
 struct Entry *shmptr;
@@ -32,11 +31,6 @@ ha un solo argomento (il signal)*/
 //------------------------------------------------------------------------------
 // funz per le operazioni pre-chiusura del processo
 void close_all(int sig){
-  //TEST
-  if (km_pid == 0)
-    printf("FIGLIO\n");
-  else
-    printf("PADRE\n");
 
   // chiudo FIFOCLIENT
   close(fifoclient);  //niente controllo perché potrebbe essere già stata chiusa nel while
@@ -53,8 +47,8 @@ void close_all(int sig){
     errExit("Server failed to remove semaphores set");
 
   // aspetto la terminazione di KeyManager per non farlo diverntare orfano
-  if (waitpid(km_pid, NULL, 0) == -1)
-    errExit("Server: waitpid() failed");
+  /*if (waitpid(km_pid, NULL, 0) == -1)
+    errExit("Server: waitpid() failed");*/
 
   // detach & delete memoria condivisa
   if (shmdt(shmptr) != 0)
@@ -70,7 +64,7 @@ void close_all(int sig){
 int main (int argc, char *argv[]) {
   printf("Server ready!\n\n");
 
-  // blocco tutti i signal tranne SIGTERM e imposto il suo signal handler
+  // blocco tutti i signal tranne SIGTERM
   sigset_t signal_set;
   if (sigfillset(&signal_set) == -1)
     errExit("sigfillset failed");
@@ -81,8 +75,7 @@ int main (int argc, char *argv[]) {
   if (sigprocmask(SIG_SETMASK, &signal_set, NULL) == -1)
     errExit("sigprocmask failed");
 
-  if (signal(SIGTERM, close_all) == SIG_ERR)
-    errExit("Server: signal handler setting failed");
+
 
 
   // creo il segmento di memoria condivisa
@@ -90,7 +83,7 @@ int main (int argc, char *argv[]) {
   if (shm_key == -1)
     errExit("Server failed to create a key for the shared mem segment");
 
-  int shmid = shmget(shm_key, SHMDIM * sizeof(struct Entry), IPC_CREAT | S_IRUSR | S_IWUSR);
+  shmid = shmget(shm_key, SHMDIM * sizeof(struct Entry), IPC_CREAT | S_IRUSR | S_IWUSR);
   if (shmid == -1)
     errExit("Server: shmget failed");
 
@@ -114,12 +107,17 @@ int main (int argc, char *argv[]) {
   else{
     //----PARENT SECTION
 
+    // imposto il signal handler per SIGTERM
+    if (signal(SIGTERM, close_all) == SIG_ERR)
+      errExit("Server: signal handler setting failed");
+    
+
     // creo un insieme di semafori per gestire la comunicaz su FIFO
     key_t sem_key = ftok("src/semaphores.c", 'a');
     if (sem_key == -1)
       errExit("Server failed to create a key for the semaphores set");
 
-    int semid = semget(sem_key, 2, IPC_CREAT | S_IRUSR | S_IWUSR);
+    semid = semget(sem_key, 2, IPC_CREAT | S_IRUSR | S_IWUSR);
     if (semid == -1)
       errExit("Server failed to perform semget");
 
@@ -137,7 +135,7 @@ int main (int argc, char *argv[]) {
     if (mkfifo(fifoserv_pathname, S_IRUSR | S_IWUSR) == -1)
       errExit("mkfifo (FIFOSERVER) failed");
 
-    int fifoserver = open(fifoserv_pathname, O_RDONLY);
+    fifoserver = open(fifoserv_pathname, O_RDONLY);
     if (fifoserver == -1)
       errExit("Server failed to open FIFOSERVER in read-only mode");
 

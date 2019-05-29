@@ -1,2 +1,1 @@
-PROBLEMA: nella close_all (che dovrebbe essere un signal handler) ci va solo il keymanager (figlio del server) e non il padre...perché?
-In più sarebbe bello usare anche un exit handler (chiamato da un exit() nel signal handler)
+Put signal handler's setting into the PARENT SECTION and in fixed the problems. Also I commented the waitpid and noticed that a wait is fine
