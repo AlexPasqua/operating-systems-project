@@ -45,7 +45,7 @@ void set_sigprocmask(sigset_t *signal_set, int sig_to_allow){
 
 //==============================================================================
 // crea il segmento di memoria condivisa e fa l'attach
-key_t crt_shmem_segment(){
+key_t crt_shmem_segment(void){
   key_t key = ftok("src/server.c", 'a');
   if (key == -1)
     errExit("Server failed to create a key for the shared mem segment");
@@ -60,6 +60,27 @@ key_t crt_shmem_segment(){
   shmptr = (struct Entry *) shmat(shmid, NULL, 0);
   if (shmptr == (void *)(-1))
     errExit("Server: shmat failed");
+
+  return key;
+}
+
+//==============================================================================
+key_t crt_fifo_semaphores(void){
+  key_t key = ftok("src/semaphores.c", 'a');
+  if (key == -1)
+    errExit("Server failed to create a key for the semaphores set");
+
+  // "semid" è una variabile globale
+  semid = semget(key, 2, IPC_CREAT | S_IRUSR | S_IWUSR);
+  if (semid == -1)
+    errExit("Server failed to perform semget");
+
+  unsigned short sem_values[2] = {0, 1}; /* il primo è per il server,
+  il secondo è per mutua esclusione tra i client*/
+  union semun arg;
+  arg.array = sem_values;
+  if (semctl(semid, 0/*ignored*/, SETALL, arg) == -1)
+    errExit("Server failed to set semaphores values");
 
   return key;
 }
@@ -113,6 +134,7 @@ int main (int argc, char *argv[]) {
 
   // CREO KEYMANAGER ---------------------------------------------
   pid_t km_pid = fork();
+
   if (km_pid == -1)
     errExit("Server: fork() failed");
 
@@ -129,21 +151,7 @@ int main (int argc, char *argv[]) {
 
 
     // creo un insieme di semafori per gestire la comunicaz su FIFO
-    key_t sem_key = ftok("src/semaphores.c", 'a');
-    if (sem_key == -1)
-      errExit("Server failed to create a key for the semaphores set");
-
-    semid = semget(sem_key, 2, IPC_CREAT | S_IRUSR | S_IWUSR);
-    if (semid == -1)
-      errExit("Server failed to perform semget");
-
-    unsigned short sem_values[2] = {0, 1}; /* il primo è per il server,
-    il secondo è per mutua esclusione tra i client*/
-    union semun arg;
-    arg.array = sem_values;
-    if (semctl(semid, 0/*ignored*/, SETALL, arg) == -1)
-      errExit("Server failed to set semaphores values");
-    //--------------------------------------------------------------
+    key_t sem_key = crt_fifo_semaphores();
 
 
     // creo e apro FIFOSERVER --------------------------------------
