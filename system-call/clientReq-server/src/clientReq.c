@@ -57,11 +57,11 @@ int main (int argc, char *argv[]) {
     // ottengo l'insieme di semafori creato dal server -----------
     key_t sem_key = ftok("src/semaphores.c", 'a');
     if (sem_key == -1)
-      errExit("Client failed to create a key fot the semaphores set");
+      errExit("clientReq failed to create a key fot the semaphores set");
 
     int semid = semget(sem_key, 2, S_IRUSR | S_IWUSR);
     if (semid == -1)
-      errExit("Client failed to perform semget");
+      errExit("clientReq failed to perform semget");
     //------------------------------------------------------------
 
 
@@ -88,13 +88,13 @@ int main (int argc, char *argv[]) {
 
     // invio i dati al server ------------------------------------
     if (write(fifoserver, &req, sizeof(struct Request)) != sizeof(struct Request))
-      errExit("Client failed to write correctly on FIFOSERVER");
+      errExit("clientReq failed to write correctly on FIFOSERVER");
 
     // leggo la risposta del server (chiave)
     struct Response resp;
     int bR = read(fifoclient, &resp, sizeof(struct Response));
     if (bR == -1) { errExit("Client failed to read key from FIFOCLIENT"); }
-    else if (bR != sizeof(struct Response)) { errExit("Looks like client didn't received a key correctly"); }
+    else if (bR != sizeof(struct Response)) { errExit("Looks like clientReq didn't received a key correctly"); }
 
     print_recap(req, resp); //stampa riepilogo dati
     //------------------------------------------------------------

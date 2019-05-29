@@ -1,4 +1,3 @@
--comincia clientExec per poi vedere come creare i sem per la mem condivisa
 -crea semafori per mem condivisa
 -comunica su mem condivisa
 
