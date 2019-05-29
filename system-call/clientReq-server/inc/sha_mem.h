@@ -1,7 +1,7 @@
 #ifndef SHAMEM_H
 #define SHAMEM_H
 
-#define SHMDIM 20
+#define SHM_DIM 20
 
 #include "myfifo.h"
 

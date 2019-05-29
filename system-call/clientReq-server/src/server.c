@@ -44,6 +44,27 @@ void set_sigprocmask(sigset_t *signal_set, int sig_to_allow){
 }
 
 //==============================================================================
+// crea il segmento di memoria condivisa e fa l'attach
+key_t crt_shmem_segment(){
+  key_t key = ftok("src/server.c", 'a');
+  if (key == -1)
+    errExit("Server failed to create a key for the shared mem segment");
+
+  // "shmid" e "shmptr" sono variabili globali
+
+  shmid = shmget(key, SHM_DIM * sizeof(struct Entry), IPC_CREAT | S_IRUSR | S_IWUSR);
+  if (shmid == -1)
+    errExit("Server: shmget failed");
+
+  // "attach" della memoria condivisa
+  shmptr = (struct Entry *) shmat(shmid, NULL, 0);
+  if (shmptr == (void *)(-1))
+    errExit("Server: shmat failed");
+
+  return key;
+}
+
+//==============================================================================
 // funz per le operazioni pre-chiusura del processo (signal handler)
 void close_all(int sig){
   // chiudo FIFOCLIENT
@@ -83,21 +104,11 @@ int main (int argc, char *argv[]) {
   sigset_t signal_set;
   set_sigprocmask(&signal_set, SIGTERM);
 
-
-  // creo il segmento di memoria condivisa -----------------------
-  key_t shm_key = ftok("src/server.c", 'a');
-  if (shm_key == -1)
-    errExit("Server failed to create a key for the shared mem segment");
-
-  shmid = shmget(shm_key, SHMDIM * sizeof(struct Entry), IPC_CREAT | S_IRUSR | S_IWUSR);
-  if (shmid == -1)
-    errExit("Server: shmget failed");
-
-  // "attach" della memoria condivisa
-  shmptr = (struct Entry *) shmat(shmid, NULL, 0);
-  if (shmptr == (void *)(-1))
-    errExit("Server: shmat failed");
-  //--------------------------------------------------------------
+  // creo il segmento di memoria condivisa
+  key_t shm_key = crt_shmem_segment();
+  /* Dati importanti in variabili globali:
+   * shared memory ID: shmid
+   * puntatore alla prima struct della memoria condivisa: shmptr */
 
 
   // CREO KEYMANAGER ---------------------------------------------
