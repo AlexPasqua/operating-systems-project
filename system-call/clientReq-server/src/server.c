@@ -28,6 +28,20 @@ argomento perché la funzione è chiamata da un signal handler che per costruzio
 ha un solo argomento (il signal)*/
 
 
+//==============================================================================
+// imposta la mask dei signal del processo
+void set_sigprocmask(sigset_t *signal_set, int sig_to_allow){
+
+  if (sigfillset(signal_set) == -1)
+    errExit("sigfillset failed");
+
+  if (sigdelset(signal_set, SIGTERM) == -1)
+    errExit("sigdelset failed");
+
+  if (sigprocmask(SIG_SETMASK, signal_set, NULL) == -1)
+    errExit("sigprocmask failed");
+
+}
 
 //==============================================================================
 // funz per le operazioni pre-chiusura del processo (signal handler)
@@ -65,17 +79,9 @@ void close_all(int sig){
 int main (int argc, char *argv[]) {
   printf("Server ready!\n\n");
 
-  // blocco tutti i signal tranne SIGTERM ------------------------
+  // blocco tutti i signal tranne SIGTERM
   sigset_t signal_set;
-  if (sigfillset(&signal_set) == -1)
-    errExit("sigfillset failed");
-
-  if (sigdelset(&signal_set, SIGTERM) == -1)
-    errExit("sigdelset failed");
-
-  if (sigprocmask(SIG_SETMASK, &signal_set, NULL) == -1)
-    errExit("sigprocmask failed");
-  //--------------------------------------------------------------
+  set_sigprocmask(&signal_set, SIGTERM);
 
 
   // creo il segmento di memoria condivisa -----------------------
