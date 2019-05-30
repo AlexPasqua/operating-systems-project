@@ -1,1 +1,8 @@
-Dato che le chiavi dei semaphore sets e degli shared memory segments sono utilizzate solo per la get, è inutile che le ritorni se ho già una funz che crea la chiave e fa subito la get, anche perché poi non sono mai più utilizzate
+ORA:
+clientExec: fa la get dei semafori per la memoria condivisa (ma ancora niente shm)
+
+server: crea i sem per la shm, crea la shm (ovviam poi rimuove tutto), crea keyManager
+
+keyManager: per ora cicla all'infinito
+
+clientReq: funzia come al solito

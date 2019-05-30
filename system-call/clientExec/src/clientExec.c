@@ -4,6 +4,7 @@
 #include <sys/shm.h>
 #include <sys/stat.h>
 #include <sys/sem.h>
+#include <unistd.h>
 
 #include "../../clientReq-server/inc/errExit.h"
 #include "../../clientReq-server/inc/sha_mem.h"
@@ -24,10 +25,21 @@ void get_shm_semaphores(void){
 }
 
 //==============================================================================
+void close_all(void){
+
+  exit(EXIT_SUCCESS);
+}
+
+//==============================================================================
 int main (int argc, char *argv[]) {
   // in questo caso è possibile che il servizio non abbia argomenti -> non farà nulla
   if (argc < 3)
     errExit("Usage: ./clientExec <user_id> <server_key> <args>");
+
+
+  // imposto un exit handler
+  if (atexit(close_all) != 0)
+    _exit(EXIT_FAILURE);
 
 
   //get e attach della memoria condivisa--------------------------

@@ -149,7 +149,7 @@ void close_all(int sig){
   if (semctl(shmsem_id, 0, IPC_RMID, NULL) == -1)
     errExit("Server failed to remove shm's semaphores set");
 
-  exit(1);
+  exit(EXIT_SUCCESS);
 }
 
 //==============================================================================

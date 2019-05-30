@@ -1,4 +1,3 @@
--crea semafori per mem condivisa
 -valuta di collassare le 2 funz in server per creare semafori in una sola
 -comunica su mem condivisa
 
