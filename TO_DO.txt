@@ -1,4 +1,5 @@
 -crea semafori per mem condivisa
+-valuta di collassare le 2 funz in server per creare semafori in una sola
 -comunica su mem condivisa
 
 -in server, MIGLIORA la funz per chiudere tutti i file descriptor ecc usando gli exit handler
