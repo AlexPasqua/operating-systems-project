@@ -4,8 +4,8 @@
 #include <sys/shm.h>
 #include <sys/stat.h>
 
-#include "errExit.h"
-#include "sha_mem.h"
+#include "../../clientReq-server/inc/errExit.h"
+#include "../../clientReq-server/inc/sha_mem.h"
 
 
 //==============================================================================
