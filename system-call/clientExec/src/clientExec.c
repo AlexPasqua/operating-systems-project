@@ -13,8 +13,8 @@ int semid;
 
 
 //==============================================================================
-void get_shm_semaphores(){
-  key_t sem_key = ftok("../../clientReq-server/src/server.c", 'b');
+void get_shm_semaphores(void){
+  key_t sem_key = ftok("../clientReq-server/src/server.c", 'b');
   if (sem_key == -1)
     errExit("clientExec: ftok failed");
 
@@ -46,7 +46,7 @@ int main (int argc, char *argv[]) {
 
 
   //TO_DO -> get dei semafori per la memoria
-
+  get_shm_semaphores();
 
 
 

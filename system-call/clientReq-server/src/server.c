@@ -45,7 +45,7 @@ void set_sigprocmask(sigset_t *signal_set, int sig_to_allow){
 
 //==============================================================================
 // crea il segmento di memoria condivisa e fa l'attach
-key_t crt_shm_segment(void){
+void crt_shm_segment(void){
   key_t key = ftok("src/server.c", 'a');
   if (key == -1)
     errExit("Server failed to create a key for the shared mem segment");
@@ -60,12 +60,10 @@ key_t crt_shm_segment(void){
   shmptr = (struct Entry *) shmat(shmid, NULL, 0);
   if (shmptr == (void *)(-1))
     errExit("Server: shmat failed");
-
-  return key;
 }
 
 //==============================================================================
-key_t crt_fifo_semaphores(void){
+void crt_fifo_semaphores(void){
   key_t key = ftok("src/semaphores.c", 'a');
   if (key == -1)
     errExit("Server failed to create a key for the fifo semaphores set");
@@ -81,8 +79,6 @@ key_t crt_fifo_semaphores(void){
   arg.array = sem_values;
   if (semctl(fifosem_id, 0/*ignored*/, SETALL, arg) == -1)
     errExit("Server failed to set fifoes' semaphores values");
-
-  return key;
 }
 
 //==============================================================================
@@ -104,7 +100,7 @@ void generate_key(struct Response *response, struct Request *client_data){
 }
 
 //==============================================================================
-key_t crt_shm_semaphores(){
+void crt_shm_semaphores(){
   key_t key = ftok("src/server.c", 'b');
   if (key == -1)
     errExit("Server failed to create a key for the shm semaphores set");
@@ -118,8 +114,6 @@ key_t crt_shm_semaphores(){
   arg.val = 0;
   if (semctl(shmsem_id, 0, SETVAL, arg) == -1)
     errExit("Server failed to set shm's semaphore values");
-
-  return key;
 }
 
 //==============================================================================
@@ -167,7 +161,7 @@ int main (int argc, char *argv[]) {
   set_sigprocmask(&signal_set, SIGTERM);
 
   // creo il segmento di memoria condivisa
-  key_t shm_key = crt_shm_segment();
+  crt_shm_segment();
   /* Dati importanti in variabili globali:
    * shared memory ID: shmid
    * puntatore alla prima struct della memoria condivisa: shmptr */
@@ -191,7 +185,7 @@ int main (int argc, char *argv[]) {
       errExit("Server: signal handler setting failed");
 
     // creo un insieme di semafori per gestire la comunicaz su FIFO
-    key_t fifosem_key = crt_fifo_semaphores();
+    crt_fifo_semaphores();
 
     // creo e apro FIFOSERVER --------------------------------------
     fifoserv_pathname = "/tmp/FIFOSERVER";  // (var globale)
@@ -208,7 +202,7 @@ int main (int argc, char *argv[]) {
     // continua a controllare richieste dei client------------------------------
     struct Request client_data;
     struct Response resp;
-    int bR, entry_idx = 0;
+    int bR/*, entry_idx = 0*/;
     while (1){
       // blocco il server finché un client non crea FIFOCLIENT
       semOp(fifosem_id, SRVSEM, -1);
@@ -230,7 +224,7 @@ int main (int argc, char *argv[]) {
 
 
       //creo i semafori per la memoria condivisa
-      key_t shmsem_key = crt_shm_semaphores();
+      crt_shm_semaphores();
 
 
       // rispondo al client
