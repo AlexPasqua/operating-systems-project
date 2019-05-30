@@ -1,8 +1,0 @@
-ORA:
-clientExec: fa la get dei semafori per la memoria condivisa (ma ancora niente shm)
-
-server: crea i sem per la shm, crea la shm (ovviam poi rimuove tutto), crea keyManager
-
-keyManager: per ora cicla all'infinito
-
-clientReq: funzia come al solito

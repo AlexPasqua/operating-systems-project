@@ -8,6 +8,7 @@
 
 #include "../../clientReq-server/inc/errExit.h"
 #include "../../clientReq-server/inc/sha_mem.h"
+#include "../../clientReq-server/inc/semaphores.h"
 
 //variabili globali
 int semid;
@@ -42,6 +43,11 @@ int main (int argc, char *argv[]) {
     _exit(EXIT_FAILURE);
 
 
+  // get dei semafori per la memoria
+  get_shm_semaphores();
+  semOp(semid, 0, -1); //mi blocco (perché server ha già azzerato il semaforo)
+
+
   //get e attach della memoria condivisa--------------------------
   key_t shm_key = ftok("../clientReq-server/src/server.c", 'a');
   if (shm_key == -1)
@@ -57,8 +63,7 @@ int main (int argc, char *argv[]) {
   //--------------------------------------------------------------
 
 
-  //TO_DO -> get dei semafori per la memoria
-  get_shm_semaphores();
+
 
 
 

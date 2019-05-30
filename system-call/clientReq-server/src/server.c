@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <signal.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -111,7 +112,7 @@ void crt_shm_semaphores(){
     errExit("Server failed to perform semget (shm sems)");
 
   union semun arg;
-  arg.val = 0;
+  arg.val = 1;  // solo il primo processo (server) può passare
   if (semctl(shmsem_id, 0, SETVAL, arg) == -1)
     errExit("Server failed to set shm's semaphore values");
 }
@@ -160,7 +161,12 @@ int main (int argc, char *argv[]) {
   sigset_t signal_set;
   set_sigprocmask(&signal_set, SIGTERM);
 
-  // creo il segmento di memoria condivisa
+  //creo i semafori per la memoria condivisa
+  crt_shm_semaphores();
+  semOp(shmsem_id, 0, -1);  /* azzero il sem e faccio sì che gli altri processi
+  vengano bloccati prima di accedere alla memoria condivisa */
+
+  // creo il segmento di memoria condivisa e faccio l'attach
   crt_shm_segment();
   /* Dati importanti in variabili globali:
    * shared memory ID: shmid
@@ -169,7 +175,6 @@ int main (int argc, char *argv[]) {
 
   // CREO KEYMANAGER ---------------------------------------------
   pid_t km_pid = fork();
-
   if (km_pid == -1)
     errExit("Server: fork() failed");
 
@@ -202,7 +207,7 @@ int main (int argc, char *argv[]) {
     // continua a controllare richieste dei client------------------------------
     struct Request client_data;
     struct Response resp;
-    int bR/*, entry_idx = 0*/;
+    int bR, entry_idx = 0;
     while (1){
       // blocco il server finché un client non crea FIFOCLIENT
       semOp(fifosem_id, SRVSEM, -1);
@@ -223,8 +228,11 @@ int main (int argc, char *argv[]) {
       generate_key(&resp, &client_data);
 
 
-      //creo i semafori per la memoria condivisa
-      crt_shm_semaphores();
+      // scrivi in memoria condivisa
+      strcpy((shmptr + entry_idx)->user, client_data.user);
+      (shmptr + entry_idx)->key = resp.key;
+      (shmptr + entry_idx)->timestamp = time(NULL);
+      entry_idx++;
 
 
       // rispondo al client
@@ -232,6 +240,9 @@ int main (int argc, char *argv[]) {
         errExit("Server failed to write on FIFOCLIENT");
 
       printf("KEY = %lu\n\n", resp.key);
+
+      // sblocco semaforo memoria condivisa
+      semOp(shmsem_id, 0, 1);
 
       // chiudo FIFOCLIENT
       if (close(fifoclient) == -1)
