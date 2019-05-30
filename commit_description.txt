@@ -1,0 +1,1 @@
+in clientExec: ho incluso gli header già presenti in clientReq-server e compilato "errExit.c" già presente senza copiare il file...semplicemente aggiustando i percorsi e completando correttamente il Makefile...niente di ché
