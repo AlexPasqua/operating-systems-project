@@ -1,5 +1,5 @@
--clientExec: crea mem condivisa
-	-comunica
+-clientExec: riempi il ciclo per cercare le coppie chiave-utente
+-vai avanti con la mem condivisa
 
 -in server, MIGLIORA la funz per chiudere tutti i file descriptor ecc usando gli exit handler
 -crea signal handler per inoltrare SIGTERM anche a KeyManager

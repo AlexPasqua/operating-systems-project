@@ -27,7 +27,7 @@ void get_shm_semaphores(void){
 
 //==============================================================================
 void close_all(void){
-
+  // forse dovrai metterci il detach della shm che sta in fondo al main
   exit(EXIT_SUCCESS);
 }
 
@@ -37,16 +37,14 @@ int main (int argc, char *argv[]) {
   if (argc < 3)
     errExit("Usage: ./clientExec <user_id> <server_key> <args>");
 
-
   // imposto un exit handler
   if (atexit(close_all) != 0)
     _exit(EXIT_FAILURE);
 
 
-  // get dei semafori per la memoria
+  // get dei semafori per la memoria condivisa
   get_shm_semaphores();
   semOp(semid, 0, -1); //mi blocco (perché server ha già azzerato il semaforo)
-
 
   //get e attach della memoria condivisa--------------------------
   key_t shm_key = ftok("../clientReq-server/src/server.c", 'a');
@@ -62,6 +60,12 @@ int main (int argc, char *argv[]) {
     errExit("clientExec: shmat failed");
   //--------------------------------------------------------------
 
+  // leggi ma memoria condivisa
+  for (unsigned int entry_idx = 0; (shmptr + entry_idx)->key != 0; entry_idx++){
+    // la chiave è inizializzata a 0 se non ho ancora scritto in quella locazione della shm
+
+    //TO_DO -> il ciclo è impostato, cerca le coppie key-user
+  }
 
 
 
@@ -69,8 +73,7 @@ int main (int argc, char *argv[]) {
 
 
 
-
-  // FOR NOW -> close della mem condivisa
+  // detach della mem condivisa
   if (shmdt(shmptr) == -1)
     errExit("clientReq: shmdt failed");
 
