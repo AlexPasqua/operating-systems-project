@@ -1,4 +1,2 @@
 MEM CONDIVISA:
-	-semafori OK
-	-clientExec: ciclo di ricerca impostato, ora va riempito
-	(keyManager ancora vuoto)
+	-clientExec: cerca la coppia chiave-utente e in caso la elimina dalla memoria condivisa

@@ -5,6 +5,8 @@
 #include <sys/stat.h>
 #include <sys/sem.h>
 #include <unistd.h>
+#include <stdbool.h>
+#include <string.h>
 
 #include "../../clientReq-server/inc/errExit.h"
 #include "../../clientReq-server/inc/sha_mem.h"
@@ -23,6 +25,14 @@ void get_shm_semaphores(void){
   semid = semget(sem_key, 1, S_IRUSR | S_IWUSR);
   if (semid == -1)
     errExit("clientExec: semget failed");
+}
+
+//==============================================================================
+bool read_user_key(struct Entry *entry, char *cmp_user, server_k cmp_key){
+  if (strcmp(entry->user, cmp_user) == 0 && entry->key == cmp_key)
+    return true;
+
+  return false;
 }
 
 //==============================================================================
@@ -61,21 +71,37 @@ int main (int argc, char *argv[]) {
   //--------------------------------------------------------------
 
   // leggi ma memoria condivisa
-  for (unsigned int entry_idx = 0; (shmptr + entry_idx)->key != 0; entry_idx++){
-    // la chiave è inizializzata a 0 se non ho ancora scritto in quella locazione della shm
-
-    //TO_DO -> il ciclo è impostato, cerca le coppie key-user
+  bool found = false;
+  unsigned int entry_idx = 0;
+  for ( ; entry_idx < SHM_DIM; entry_idx++){
+    if (read_user_key((shmptr + entry_idx), argv[1], atoi(argv[2]))){
+      found = true;
+      break;
+    }
   }
 
+  switch (found){
+    case true: {
+      // rimuovo la entry dalla memoria condivisa
+      strcpy((shmptr + entry_idx)->user, "");
+      (shmptr + entry_idx)->key = (shmptr + entry_idx)->timestamp = 0;
+
+      // sblocco il semaforo della memoria condivisa
+      semOp(semid, 0, 1);
+    }
 
 
+    default: {
+      printf("Coppia chiave-utente non valida\n");
 
+      // sblocco il semaforo della memoria condivisa
+      semOp(semid, 0, 1);
 
-
-
-  // detach della mem condivisa
-  if (shmdt(shmptr) == -1)
-    errExit("clientReq: shmdt failed");
+      // detach della mem condivisa
+      if (shmdt(shmptr) == -1)
+        errExit("clientReq: shmdt failed");
+    }
+  }
 
   return 0;
 }

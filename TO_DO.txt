@@ -1,4 +1,4 @@
--clientExec: riempi il ciclo per cercare le coppie chiave-utente
+-server: scrivi in shm dove è libero, non sempre andando avanti
 -vai avanti con la mem condivisa
 
 -in server, MIGLIORA la funz per chiudere tutti i file descriptor ecc usando gli exit handler

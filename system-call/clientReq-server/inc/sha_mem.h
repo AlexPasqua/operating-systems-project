@@ -1,9 +1,9 @@
 #ifndef SHAMEM_H
 #define SHAMEM_H
 
-#define SHM_DIM 20
-
 #include "myfifo.h"
+
+unsigned int SHM_DIM = 20;
 
 // struct che descrive un'entry del segmento di shared memory
 struct Entry {
