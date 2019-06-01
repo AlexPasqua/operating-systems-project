@@ -1,2 +1,0 @@
-MEM CONDIVISA:
-	-clientExec: cerca la coppia chiave-utente e in caso la elimina dalla memoria condivisa

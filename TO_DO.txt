@@ -1,3 +1,4 @@
+-clientExec: devi fare una funz tua per trasformare da stringa a long unsigned
 -server: scrivi in shm dove è libero, non sempre andando avanti
 -vai avanti con la mem condivisa
 

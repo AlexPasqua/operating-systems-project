@@ -20,141 +20,20 @@
 #define HUNDREAD_THOUSANDS 100000
 #define THOUSAND_BILLIONS 1000000000000
 
+// dichiarazione funzioni
+void set_sigprocmask(sigset_t *, int);  // imposta la mask dei signal del processo
+void crt_shm_semaphores(void);  // crea i semafori per la memoria condivisa
+void crt_shm_segment(void); // crea il segmento di memoria condivisa e fa l'attach
+void crt_fifo_semaphores(void); // crea i semafori per la comunicazione su fifo
+void generate_key(struct Response *, struct Request *); // genera la chiave di utilizzo
+void keyman_sighand(int); // signal handler del KeyManager
+void close_all(int);  // funz per le operazioni pre-chiusura (signal handler del server)
+
 // variabili globali
 int fifoserver, fifoclient, fifosem_id, shmsem_id, shmid;
 char *fifoserv_pathname;
 struct Entry *shmptr;
-/*sono glibali perché servono in "close_all()", ma non posso passarle per
-argomento perché la funzione è chiamata da un signal handler che per costruzione
-ha un solo argomento (il signal)*/
 
-
-//==============================================================================
-// imposta la mask dei signal del processo
-void set_sigprocmask(sigset_t *signal_set, int sig_to_allow){
-
-  if (sigfillset(signal_set) == -1)
-    errExit("sigfillset failed");
-
-  if (sigdelset(signal_set, SIGTERM) == -1)
-    errExit("sigdelset failed");
-
-  if (sigprocmask(SIG_SETMASK, signal_set, NULL) == -1)
-    errExit("sigprocmask failed");
-
-}
-
-//==============================================================================
-void crt_shm_semaphores(){
-  key_t key = ftok("src/server.c", 'b');
-  if (key == -1)
-    errExit("Server failed to create a key for the shm semaphores set");
-
-  // (shmsem_id var globale)
-  shmsem_id = semget(key, 1, IPC_CREAT | S_IRUSR | S_IWUSR);
-  if (shmsem_id == -1)
-    errExit("Server failed to perform semget (shm sems)");
-
-  union semun arg;
-  arg.val = 1;  // solo il primo processo (server) può passare
-  if (semctl(shmsem_id, 0, SETVAL, arg) == -1)
-    errExit("Server failed to set shm's semaphore values");
-}
-
-//==============================================================================
-// crea il segmento di memoria condivisa e fa l'attach
-void crt_shm_segment(void){
-  key_t key = ftok("src/server.c", 'a');
-  if (key == -1)
-    errExit("Server failed to create a key for the shared mem segment");
-
-  // "shmid" e "shmptr" sono variabili globali
-
-  shmid = shmget(key, SHM_DIM * sizeof(struct Entry), IPC_CREAT | S_IRUSR | S_IWUSR);
-  if (shmid == -1)
-    errExit("Server: shmget failed");
-
-  // "attach" della memoria condivisa
-  shmptr = (struct Entry *) shmat(shmid, NULL, 0);
-  if (shmptr == (void *)(-1))
-    errExit("Server: shmat failed");
-}
-
-//==============================================================================
-void crt_fifo_semaphores(void){
-  key_t key = ftok("src/semaphores.c", 'a');
-  if (key == -1)
-    errExit("Server failed to create a key for the fifo semaphores set");
-
-  // "fifosem_id" è una variabile globale
-  fifosem_id = semget(key, 2, IPC_CREAT | S_IRUSR | S_IWUSR);
-  if (fifosem_id == -1)
-    errExit("Server failed to perform semget (fifo sems)");
-
-  unsigned short sem_values[2] = {0, 1}; /* il primo è per il server,
-  il secondo è per mutua esclusione tra i client*/
-  union semun arg;
-  arg.array = sem_values;
-  if (semctl(fifosem_id, 0/*ignored*/, SETALL, arg) == -1)
-    errExit("Server failed to set fifoes' semaphores values");
-}
-
-//==============================================================================
-void generate_key(struct Response *response, struct Request *client_data){
-  /* genero la chiave:
-   *  prendo il timestamp, accodo il numero corrispondente all'iniziale
-   *  dello user, una cifra per il servizio (0=stampa, 1=salva, 2=invia)
-   *  e una cifra casuale. Dopodiché elimino le prime 3 cifre (che sono sempre uguali
-   *  perché cambiano al passare di mesi/anni)
-   *
-   *  per il servizio controllo solo i primi 2 caratteri di service
-   *  (sono già sicuro che le stringhe siano corrette)
-   */
-  unsigned long timestamp = time(NULL);
-  srand(timestamp);
-  response->key = ((timestamp * HUNDREAD_THOUSANDS) + (client_data->user[0] * 100) +
-             ((client_data->service[0] == 'i') ? 20 : ((client_data->service[1] == 't') ? 0 : 10)) +
-             (rand() % 10)) % THOUSAND_BILLIONS;
-}
-
-//==============================================================================
-void keyman_sighand(int sig) { exit(EXIT_SUCCESS); }
-
-//==============================================================================
-// funz per le operazioni pre-chiusura del processo (signal handler)
-void close_all(int sig){
-  // chiudo FIFOCLIENT
-  close(fifoclient);  //niente controllo perché potrebbe essere già stata chiusa nel while
-
-  // chiudo ed elimino FIFOSERVER
-  if (close(fifoserver) == -1)
-    errExit("Server failed to close FIFOSERVER");
-
-  if (unlink(fifoserv_pathname) != 0)
-    errExit("Server failed to unlink FIFOSERVER");
-
-
-  // elimino il set di semafori per le FIFO
-  if (semctl(fifosem_id, 0/*ignored*/, IPC_RMID, NULL) == -1)
-    errExit("Server failed to remove fifoes' semaphores set");
-
-  // aspetto la terminazione di KeyManager per non farlo diverntare orfano
-  /*if (waitpid(km_pid, NULL, 0) == -1)
-    errExit("Server: waitpid() failed");*/
-
-  // detach & delete memoria condivisa
-  if (shmdt(shmptr) != 0)
-    errExit("Server: shmdt failed");
-
-  if (shmctl(shmid, IPC_RMID, NULL) != 0)
-    errExit("Server failed to delete shared memory segment");
-
-  // elimino il set di semafori per la memoria condivisa
-  if (semctl(shmsem_id, 0, IPC_RMID, NULL) == -1)
-    errExit("Server failed to remove shm's semaphores set");
-
-  exit(EXIT_SUCCESS);
-}
 
 //==============================================================================
 int main (int argc, char *argv[]) {
@@ -265,4 +144,137 @@ int main (int argc, char *argv[]) {
   }
 
   return 0;
+}
+
+
+
+//##############################################################################
+// imposta la mask dei signal del processo
+void set_sigprocmask(sigset_t *signal_set, int sig_to_allow){
+
+  if (sigfillset(signal_set) == -1)
+    errExit("sigfillset failed");
+
+  if (sigdelset(signal_set, SIGTERM) == -1)
+    errExit("sigdelset failed");
+
+  if (sigprocmask(SIG_SETMASK, signal_set, NULL) == -1)
+    errExit("sigprocmask failed");
+
+}
+
+//==============================================================================
+// crea i semafori per la memoria condivisa
+void crt_shm_semaphores(){
+  key_t key = ftok("src/server.c", 'b');
+  if (key == -1)
+    errExit("Server failed to create a key for the shm semaphores set");
+
+  // (shmsem_id var globale)
+  shmsem_id = semget(key, 1, IPC_CREAT | S_IRUSR | S_IWUSR);
+  if (shmsem_id == -1)
+    errExit("Server failed to perform semget (shm sems)");
+
+  union semun arg;
+  arg.val = 1;  // solo il primo processo (server) può passare
+  if (semctl(shmsem_id, 0, SETVAL, arg) == -1)
+    errExit("Server failed to set shm's semaphore values");
+}
+
+//==============================================================================
+// crea il segmento di memoria condivisa e fa l'attach
+void crt_shm_segment(void){
+  key_t key = ftok("src/server.c", 'a');
+  if (key == -1)
+    errExit("Server failed to create a key for the shared mem segment");
+
+  // "shmid" e "shmptr" sono variabili globali
+
+  shmid = shmget(key, SHM_DIM * sizeof(struct Entry), IPC_CREAT | S_IRUSR | S_IWUSR);
+  if (shmid == -1)
+    errExit("Server: shmget failed");
+
+  // "attach" della memoria condivisa
+  shmptr = (struct Entry *) shmat(shmid, NULL, 0);
+  if (shmptr == (void *)(-1))
+    errExit("Server: shmat failed");
+}
+
+//==============================================================================
+// crea i semafori per la comunicazione su fifo
+void crt_fifo_semaphores(void){
+  key_t key = ftok("src/semaphores.c", 'a');
+  if (key == -1)
+    errExit("Server failed to create a key for the fifo semaphores set");
+
+  // "fifosem_id" è una variabile globale
+  fifosem_id = semget(key, 2, IPC_CREAT | S_IRUSR | S_IWUSR);
+  if (fifosem_id == -1)
+    errExit("Server failed to perform semget (fifo sems)");
+
+  unsigned short sem_values[2] = {0, 1}; /* il primo è per il server,
+  il secondo è per mutua esclusione tra i client*/
+  union semun arg;
+  arg.array = sem_values;
+  if (semctl(fifosem_id, 0/*ignored*/, SETALL, arg) == -1)
+    errExit("Server failed to set fifoes' semaphores values");
+}
+
+//==============================================================================
+// genera la chiave di utilizzo
+void generate_key(struct Response *response, struct Request *client_data){
+  /* genero la chiave:
+   *  prendo il timestamp, accodo il numero corrispondente all'iniziale
+   *  dello user, una cifra per il servizio (0=stampa, 1=salva, 2=invia)
+   *  e una cifra casuale. Dopodiché elimino le prime 3 cifre (che sono sempre uguali
+   *  perché cambiano al passare di mesi/anni)
+   *
+   *  per il servizio controllo solo i primi 2 caratteri di service
+   *  (sono già sicuro che le stringhe siano corrette)
+   */
+  unsigned long timestamp = time(NULL);
+  srand(timestamp);
+  response->key = ((timestamp * HUNDREAD_THOUSANDS) + (client_data->user[0] * 100) +
+             ((client_data->service[0] == 'i') ? 20 : ((client_data->service[1] == 't') ? 0 : 10)) +
+             (rand() % 10)) % THOUSAND_BILLIONS;
+}
+
+//==============================================================================
+// signal handler del KeyManager
+void keyman_sighand(int sig) { exit(EXIT_SUCCESS); }
+
+//==============================================================================
+// funz per le operazioni pre-chiusura (signal handler del server)
+void close_all(int sig){
+  // chiudo FIFOCLIENT
+  close(fifoclient);  //niente controllo perché potrebbe essere già stata chiusa nel while
+
+  // chiudo ed elimino FIFOSERVER
+  if (close(fifoserver) == -1)
+    errExit("Server failed to close FIFOSERVER");
+
+  if (unlink(fifoserv_pathname) != 0)
+    errExit("Server failed to unlink FIFOSERVER");
+
+
+  // elimino il set di semafori per le FIFO
+  if (semctl(fifosem_id, 0/*ignored*/, IPC_RMID, NULL) == -1)
+    errExit("Server failed to remove fifoes' semaphores set");
+
+  // aspetto la terminazione di KeyManager per non farlo diverntare orfano
+  /*if (waitpid(km_pid, NULL, 0) == -1)
+    errExit("Server: waitpid() failed");*/
+
+  // detach & delete memoria condivisa
+  if (shmdt(shmptr) != 0)
+    errExit("Server: shmdt failed");
+
+  if (shmctl(shmid, IPC_RMID, NULL) != 0)
+    errExit("Server failed to delete shared memory segment");
+
+  // elimino il set di semafori per la memoria condivisa
+  if (semctl(shmsem_id, 0, IPC_RMID, NULL) == -1)
+    errExit("Server failed to remove shm's semaphores set");
+
+  exit(EXIT_SUCCESS);
 }
