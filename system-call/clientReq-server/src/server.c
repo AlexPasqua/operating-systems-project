@@ -45,6 +45,23 @@ void set_sigprocmask(sigset_t *signal_set, int sig_to_allow){
 }
 
 //==============================================================================
+void crt_shm_semaphores(){
+  key_t key = ftok("src/server.c", 'b');
+  if (key == -1)
+    errExit("Server failed to create a key for the shm semaphores set");
+
+  // (shmsem_id var globale)
+  shmsem_id = semget(key, 1, IPC_CREAT | S_IRUSR | S_IWUSR);
+  if (shmsem_id == -1)
+    errExit("Server failed to perform semget (shm sems)");
+
+  union semun arg;
+  arg.val = 1;  // solo il primo processo (server) può passare
+  if (semctl(shmsem_id, 0, SETVAL, arg) == -1)
+    errExit("Server failed to set shm's semaphore values");
+}
+
+//==============================================================================
 // crea il segmento di memoria condivisa e fa l'attach
 void crt_shm_segment(void){
   key_t key = ftok("src/server.c", 'a');
@@ -101,21 +118,7 @@ void generate_key(struct Response *response, struct Request *client_data){
 }
 
 //==============================================================================
-void crt_shm_semaphores(){
-  key_t key = ftok("src/server.c", 'b');
-  if (key == -1)
-    errExit("Server failed to create a key for the shm semaphores set");
-
-  // (shmsem_id var globale)
-  shmsem_id = semget(key, 1, IPC_CREAT | S_IRUSR | S_IWUSR);
-  if (shmsem_id == -1)
-    errExit("Server failed to perform semget (shm sems)");
-
-  union semun arg;
-  arg.val = 1;  // solo il primo processo (server) può passare
-  if (semctl(shmsem_id, 0, SETVAL, arg) == -1)
-    errExit("Server failed to set shm's semaphore values");
-}
+void keyman_sighand(int sig) { exit(EXIT_SUCCESS); }
 
 //==============================================================================
 // funz per le operazioni pre-chiusura del processo (signal handler)
@@ -180,6 +183,11 @@ int main (int argc, char *argv[]) {
 
   else if (km_pid == 0){
     //----KEY MANAGER SECTION
+
+    //imposto un signal handler per KeyManager
+    if (signal(SIGTERM, keyman_sighand) == SIG_ERR)
+      errExit("Server: signal handler setting failed");
+
     while (1);
   }
   else{
