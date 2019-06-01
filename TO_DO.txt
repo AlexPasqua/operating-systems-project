@@ -1,4 +1,4 @@
--clientExec: devi fare una funz tua per trasformare da stringa a long unsigned
+-clientExec: devi fare una funz tua per trasformare da stringa a long unsigned (se no taglia il numero della chiave)
 -server: scrivi in shm dove è libero, non sempre andando avanti
 -vai avanti con la mem condivisa
 
