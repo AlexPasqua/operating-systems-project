@@ -1,6 +1,7 @@
--clientExec: devi fare una funz tua per trasformare da stringa a long unsigned (se no taglia il numero della chiave)
--server: scrivi in shm dove è libero, non sempre andando avanti
--vai avanti con la mem condivisa
+-implementa i 3 servizi
+-fai la exec da clientExec
+-implementa keyManager
+-rendi dinamica la dimensione della memoria condivisa
 
 -in server, MIGLIORA la funz per chiudere tutti i file descriptor ecc usando gli exit handler
 -crea signal handler per inoltrare SIGTERM anche a KeyManager
@@ -8,3 +9,4 @@
 	-prova a metterla in semaphores.c
 
 -valuta di creare keyManager in un altro punto di server per non fargli ereditare i file descriptor di FIFOSERVER ecc
+-sarebbe figo cercare dove scrivere in shm tramite multithreading (=crea processi figlio per la ricerca)

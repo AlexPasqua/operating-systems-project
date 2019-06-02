@@ -100,6 +100,10 @@ int main (int argc, char *argv[]) {
 
       // sblocco il semaforo della memoria condivisa
       semOp(semid, 0, 1);
+
+      char service_digit = argv[2][10];
+      printf("Coppia chiave-utente corretta! Eseguo %s...\n", services[service_digit - 48]);
+
       break;
     }
 

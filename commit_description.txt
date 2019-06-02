@@ -1,0 +1,2 @@
+1: il server scrive nella shm dove c'è libero, non andando sempre avanti
+2: clientExec legge da shm e identifica il servizio da lanciare

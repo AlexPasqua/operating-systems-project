@@ -116,10 +116,10 @@ int main (int argc, char *argv[]) {
 
 
       // scrivi in memoria condivisa
+      for (entry_idx = 0; (shmptr + entry_idx)->key != 0; entry_idx++);
       strcpy((shmptr + entry_idx)->user, client_data.user);
       (shmptr + entry_idx)->key = resp.key;
       (shmptr + entry_idx)->timestamp = time(NULL);
-      entry_idx++;
 
 
       // rispondo al client

@@ -17,10 +17,8 @@
 //==============================================================================
 // funz per controllare l'inserimento del servizio richiesto
 bool check_service_input(char *service){
-  char *avail_servs[] = {"stampa", "salva", "invia"};
-
   for (int i = 0; i < 3; i++)
-    if (strcmp(service, avail_servs[i]) == 0)
+    if (strcmp(service, services[i]) == 0)
       return true;
 
   printf("\nErr. Il nome va scelto tra \"stampa\" - \"salva\" - \"invia\"\n");

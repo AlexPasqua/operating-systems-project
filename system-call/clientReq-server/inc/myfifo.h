@@ -6,6 +6,8 @@
 
 typedef unsigned long server_k;
 
+const char *services[3] = {"stampa", "salva", "invia"};
+
 // struct per la comunicazione tramite FIFOCLIENT e FIFOSERVER
 struct Request { char user[USR_STRDIM], service[SRV_STRDIM]; };
 struct Response { server_k key; };
