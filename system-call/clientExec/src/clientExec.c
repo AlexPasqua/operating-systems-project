@@ -36,6 +36,18 @@ bool read_user_key(struct Entry *entry, char *cmp_user, server_k cmp_key){
 }
 
 //==============================================================================
+server_k str_to_servk(char *str){
+  server_k result = 0;
+
+  for (int i = 0; str[i] != '\0'; i++){
+    result += str[i] - 48;
+    result *= 10;
+  }
+
+  return result / 10;
+}
+
+//==============================================================================
 void close_all(void){
   // forse dovrai metterci il detach della shm che sta in fondo al main
   exit(EXIT_SUCCESS);
@@ -74,7 +86,7 @@ int main (int argc, char *argv[]) {
   bool found = false;
   unsigned int entry_idx = 0;
   for ( ; entry_idx < SHM_DIM; entry_idx++){
-    if (read_user_key((shmptr + entry_idx), argv[1], atoi(argv[2]))){
+    if (read_user_key((shmptr + entry_idx), argv[1], str_to_servk(argv[2]))){
       found = true;
       break;
     }
@@ -88,8 +100,8 @@ int main (int argc, char *argv[]) {
 
       // sblocco il semaforo della memoria condivisa
       semOp(semid, 0, 1);
+      break;
     }
-
 
     default: {
       printf("Coppia chiave-utente non valida\n");
@@ -100,6 +112,8 @@ int main (int argc, char *argv[]) {
       // detach della mem condivisa
       if (shmdt(shmptr) == -1)
         errExit("clientReq: shmdt failed");
+
+      break;
     }
   }
 
