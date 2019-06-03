@@ -5,11 +5,11 @@ INCLUDES=-I./inc
 # list source code files for clientExc executable
 CLIENT_SRCS=src/clientExec.c ../clientReq-server/src/errExit.c ../clientReq-server/src/semaphores.c
 # list source code files for salva executable
-SALVA_SRCS=src/salva.c
+SALVA_SRCS=src/salva.c ../clientReq-server/src/errExit.c
 # list source code files for stampa executable
 STAMPA_SRCS=src/stampa.c
 # list source code files for inva executable
-INVIA_SRCS=src/invia.c
+INVIA_SRCS=src/invia.c ../clientReq-server/src/errExit.c
 
 ##------------------------------------------------------------------------------
 ## DO NOT TOUCH BELOW THIS LINE!
