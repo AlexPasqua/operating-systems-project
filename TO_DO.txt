@@ -1,7 +1,7 @@
 -implementa i 3 servizi
 -fai la exec da clientExec
 -implementa keyManager
--rendi dinamica la dimensione della memoria condivisa
+-prova a fare in modo che il server cerchi lo spazio libero con una specie di funz di hashing (saltando di qua e di là)
 
 -in server, MIGLIORA la funz per chiudere tutti i file descriptor ecc usando gli exit handler
 -crea signal handler per inoltrare SIGTERM anche a KeyManager
