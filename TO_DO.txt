@@ -1,5 +1,3 @@
--implementa i 3 servizi
--fai la exec da clientExec
 -implementa keyManager
 -prova a fare in modo che il server cerchi lo spazio libero con una specie di funz di hashing (saltando di qua e di là)
 

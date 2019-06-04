@@ -21,11 +21,11 @@
 #define THOUSAND_BILLIONS 1000000000000
 
 // dichiarazione funzioni
-void set_sigprocmask(sigset_t *, int);  // imposta la mask dei signal del processo
+void set_sigprocmask(sigset_t*, int);  // imposta la mask dei signal del processo
 void crt_shm_semaphores(void);  // crea i semafori per la memoria condivisa
 void crt_shm_segment(void); // crea il segmento di memoria condivisa e fa l'attach
 void crt_fifo_semaphores(void); // crea i semafori per la comunicazione su fifo
-void generate_key(struct Response *, struct Request *); // genera la chiave di utilizzo
+void generate_key(struct Response*, struct Request*); // genera la chiave di utilizzo
 void keyman_sighand(int); // signal handler del KeyManager
 void close_all(int);  // funz per le operazioni pre-chiusura (signal handler del server)
 

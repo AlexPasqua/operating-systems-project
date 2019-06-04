@@ -12,56 +12,20 @@
 #include "../../clientReq-server/inc/sha_mem.h"
 #include "../../clientReq-server/inc/semaphores.h"
 
+// dichiarazione funzioni
+void get_shm_semaphores(void); //ottiene il set di semafori per la memoria condivisa
+bool read_user_key(struct Entry*, char*, server_k); //controlla se esiste una certa coppia chiave-utente
+server_k str_to_servk(char*); //trasforma una chiave da char* a server_k
+
 //variabili globali
 int semid;
 
-
-//==============================================================================
-void get_shm_semaphores(void){
-  key_t sem_key = ftok("../clientReq-server/src/server.c", 'b');
-  if (sem_key == -1)
-    errExit("clientExec: ftok failed");
-
-  semid = semget(sem_key, 1, S_IRUSR | S_IWUSR);
-  if (semid == -1)
-    errExit("clientExec: semget failed");
-}
-
-//==============================================================================
-bool read_user_key(struct Entry *entry, char *cmp_user, server_k cmp_key){
-  if (strcmp(entry->user, cmp_user) == 0 && entry->key == cmp_key)
-    return true;
-
-  return false;
-}
-
-//==============================================================================
-server_k str_to_servk(char *str){
-  server_k result = 0;
-
-  for (int i = 0; str[i] != '\0'; i++){
-    result += str[i] - 48;
-    result *= 10;
-  }
-
-  return result / 10;
-}
-
-//==============================================================================
-void close_all(void){
-  // forse dovrai metterci il detach della shm che sta in fondo al main
-  exit(EXIT_SUCCESS);
-}
 
 //==============================================================================
 int main (int argc, char *argv[]) {
   // in questo caso è possibile che il servizio non abbia argomenti -> non farà nulla
   if (argc < 3)
     errExit("Usage: ./clientExec <user_id> <server_key> <args>");
-
-  // imposto un exit handler
-  if (atexit(close_all) != 0)
-    _exit(EXIT_FAILURE);
 
 
   // get dei semafori per la memoria condivisa
@@ -92,34 +56,70 @@ int main (int argc, char *argv[]) {
     }
   }
 
-  switch (found){
-    case true: {
-      // rimuovo la entry dalla memoria condivisa
-      strcpy((shmptr + entry_idx)->user, "");
-      (shmptr + entry_idx)->key = (shmptr + entry_idx)->timestamp = 0;
+  if (found){
+    // rimuovo la entry dalla memoria condivisa
+    strcpy((shmptr + entry_idx)->user, "");
+    (shmptr + entry_idx)->key = (shmptr + entry_idx)->timestamp = 0;
+  }
 
-      // sblocco il semaforo della memoria condivisa
-      semOp(semid, 0, 1);
+  // sblocco il semaforo della memoria condivisa
+  semOp(semid, 0, 1);
 
-      char service_digit = argv[2][10];
-      printf("Coppia chiave-utente corretta! Eseguo %s...\n", services[service_digit - 48]);
+  // detach della mem condivisa
+  if (shmdt(shmptr) == -1)
+    errExit("clientReq: shmdt failed");
 
-      break;
+  if (found){
+    short service_idx = argv[2][10] - 48;
+    printf("Coppia chiave-utente corretta! Eseguo %s...\n", services[service_idx]);
+
+    // lancio il programma desiderato --------------------------
+    char *passing_args[argc - 1];
+
+    for (int i = 0; i < argc-2; i++){
+      if (i == 0)
+        passing_args[i] = (char *) services[service_idx];
+      else
+        passing_args[i] = argv[i + 2];
     }
+    passing_args[argc - 2] = (char *)NULL;
 
-    default: {
-      printf("Coppia chiave-utente non valida\n");
-
-      // sblocco il semaforo della memoria condivisa
-      semOp(semid, 0, 1);
-
-      // detach della mem condivisa
-      if (shmdt(shmptr) == -1)
-        errExit("clientReq: shmdt failed");
-
-      break;
-    }
+    execv(services[service_idx], passing_args);
+    errExit("ClientExec: excl failed");
+    //----------------------------------------------------------
   }
 
   return 0;
+}
+
+
+//==============================================================================
+void get_shm_semaphores(){
+  key_t sem_key = ftok("../clientReq-server/src/server.c", 'b');
+  if (sem_key == -1)
+    errExit("clientExec: ftok failed");
+
+  semid = semget(sem_key, 1, S_IRUSR | S_IWUSR);
+  if (semid == -1)
+    errExit("clientExec: semget failed");
+}
+
+//==============================================================================
+bool read_user_key(struct Entry *entry, char *cmp_user, server_k cmp_key){
+  if (strcmp(entry->user, cmp_user) == 0 && entry->key == cmp_key)
+    return true;
+
+  return false;
+}
+
+//==============================================================================
+server_k str_to_servk(char *str){
+  server_k result = 0;
+
+  for (int i = 0; str[i] != '\0'; i++){
+    result += str[i] - 48;
+    result *= 10;
+  }
+
+  return result / 10;
 }
