@@ -9,7 +9,7 @@
 #include <string.h>
 
 #include "../../clientReq-server/inc/errExit.h"
-#include "../../clientReq-server/inc/sha_mem.h"
+#include "../../clientReq-server/inc/shmem.h"
 #include "../../clientReq-server/inc/semaphores.h"
 
 // dichiarazione funzioni
