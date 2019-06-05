@@ -1,0 +1,1 @@
+In sè funziona, però se riempio la memoria continuo a scorrere e lanciare ALARM, ma il client resta in attesa finché non si libera qualcosa
