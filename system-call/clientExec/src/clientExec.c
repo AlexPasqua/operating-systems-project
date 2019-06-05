@@ -57,9 +57,8 @@ int main (int argc, char *argv[]) {
   }
 
   if (found){
-    // rimuovo la entry dalla memoria condivisa
-    strcpy((shmptr + entry_idx)->user, "");
-    (shmptr + entry_idx)->key = (shmptr + entry_idx)->timestamp = 0;
+    // rimuovo la entry dalla shm (basta azzerare la chiave perché il controllo è su quella)
+    (shmptr + entry_idx)->key = 0;
   }
 
   // sblocco il semaforo della memoria condivisa
@@ -77,12 +76,11 @@ int main (int argc, char *argv[]) {
     // lancio il programma desiderato --------------------------
     char *passing_args[argc - 1];
 
-    for (int i = 0; i < argc-2; i++){
-      if (i == 0)
-        passing_args[i] = (char *) services[service_idx];
-      else
-        passing_args[i] = argv[i + 2];
-    }
+    passing_args[0] = (char *) services[service_idx];
+
+    for (int i = 1; i < argc-2; i++)
+      passing_args[i] = argv[i + 2];
+
     passing_args[argc - 2] = (char *)NULL;
 
     execv(services[service_idx], passing_args);
