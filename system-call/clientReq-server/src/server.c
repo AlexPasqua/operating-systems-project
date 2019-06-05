@@ -11,6 +11,7 @@
 #include <time.h>
 #include <sys/shm.h>
 #include <sys/wait.h>
+#include <errno.h>
 
 #include "errExit.h"
 #include "myfifo.h"
@@ -31,6 +32,7 @@ void close_all(int);  // funz per le operazioni pre-chiusura (signal handler del
 
 // variabili globali
 int fifoserver, fifoclient, fifosem_id, shmsem_id, shmid;
+pid_t km_pid;
 unsigned short max_entry_idx;
 char *fifoserv_pathname;
 Entry *shmptr;
@@ -55,9 +57,11 @@ int main (int argc, char *argv[]) {
    * shared memory ID: shmid
    * puntatore alla prima struct della memoria condivisa: shmptr */
 
+   semOp(shmsem_id, 0, 1);  //sblocco il semaforo della shm
+
 
   // CREO KEYMANAGER ---------------------------------------------
-  pid_t km_pid = fork();
+  km_pid = fork();
   if (km_pid == -1)
     errExit("Server: fork() failed");
 
@@ -65,8 +69,8 @@ int main (int argc, char *argv[]) {
     //----KEY MANAGER SECTION
 
     // modifico la signal mask per sbloccare la ricez di SIGALRM
-    sigset_t km_sigset = signal_set;
-    if (sigprocmask(SIG_UNBLOCK, &km_sigset, NULL) == -1)
+    if (sigdelset(&signal_set, SIGALRM) == -1) { errExit("KeyManager: sigdelset failed"); }
+    if (sigprocmask(SIG_SETMASK, &signal_set, NULL) == -1)
       errExit("KeyManager: sigprocmask failed");
 
     //imposto i signal handler per KeyManager
@@ -74,11 +78,11 @@ int main (int argc, char *argv[]) {
       errExit("KeyManager: signal handler setting failed");
 
     while (1){
-      printf("\n\nALARM...\n\n");
-      alarm(5); //TO_DO -> metti a 30 sec l'alarm
+      alarm(5);
       pause();
     }
   }
+
   else{
     //----PARENT SECTION
 
@@ -90,7 +94,7 @@ int main (int argc, char *argv[]) {
     crt_fifo_semaphores();
 
     // creo e apro FIFOSERVER --------------------------------------
-    fifoserv_pathname = "/tmp/FIFOSERVER";  // (var globale)
+    fifoserv_pathname = "/tmp/FIFOSERVER";
     char *fifocli_pathname = "/tmp/FIFOCLIENT";
     if (mkfifo(fifoserv_pathname, S_IRUSR | S_IWUSR) == -1)
       errExit("mkfifo (FIFOSERVER) failed");
@@ -126,6 +130,8 @@ int main (int argc, char *argv[]) {
 
 
       // scrivo in memoria condivisa -----------------------------
+      semOp(shmsem_id, 0, -1);
+
       //trovo una entry libera
       for (entry_idx = 0; (shmptr + entry_idx)->key != 0; entry_idx++){
         if (entry_idx >= SHM_DIM){
@@ -284,6 +290,8 @@ void keyman_sigHand(int sig) {
 //==============================================================================
 // funz per le operazioni pre-chiusura (signal handler del server)
 void close_all(int sig){
+  kill(km_pid, SIGTERM);
+
   // chiudo FIFOCLIENT
   close(fifoclient);  //niente controllo perché potrebbe essere già stata chiusa nel while
 
