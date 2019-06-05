@@ -1,3 +1,1 @@
--clientExec: eliminato exit handler inutile
--clientExec: eliminato lo swith case perché c'era del codice doppio (ora uso un normale if)
--clientExec: exec fatta
+ho sistemato il problema degli header (multiple definition of services...) mettendo services nei sorgenti, tanto viene creato e distrutto velocemente in entrambi i casi, inoltre è piccolo
