@@ -78,7 +78,7 @@ int main (int argc, char *argv[]) {
       errExit("KeyManager: signal handler setting failed");
 
     while (1){
-      alarm(5);
+      alarm(30);
       pause();
     }
   }
