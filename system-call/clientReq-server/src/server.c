@@ -15,7 +15,7 @@
 #include "errExit.h"
 #include "myfifo.h"
 #include "semaphores.h"
-#include "sha_mem.h"
+#include "shmem.h"
 
 #define HUNDREAD_THOUSANDS 100000
 #define THOUSAND_BILLIONS 1000000000000

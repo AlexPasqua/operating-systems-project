@@ -70,6 +70,7 @@ int main (int argc, char *argv[]) {
     errExit("clientReq: shmdt failed");
 
   if (found){
+    char *services[] = {"stampa", "salva", "invia"};
     short service_idx = argv[2][10] - 48;
     printf("Coppia chiave-utente corretta! Eseguo %s...\n", services[service_idx]);
 

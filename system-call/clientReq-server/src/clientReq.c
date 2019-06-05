@@ -17,6 +17,8 @@
 //==============================================================================
 // funz per controllare l'inserimento del servizio richiesto
 bool check_service_input(char *service){
+  char *services[] = {"stampa", "salva", "invia"};
+
   for (int i = 0; i < 3; i++)
     if (strcmp(service, services[i]) == 0)
       return true;

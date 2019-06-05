@@ -3,7 +3,7 @@
 
 #include "myfifo.h"
 
-unsigned int SHM_DIM = 20;
+#define SHM_DIM 100
 
 // struct che descrive un'entry del segmento di shared memory
 struct Entry {
