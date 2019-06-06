@@ -1,4 +1,4 @@
--testa keyManager
+-implementa keyManager
 -prova a fare una fork nella funz che elimina le entry
 -valuta: prova a fare in modo che il server cerchi lo spazio libero con una specie di funz di hashing (saltando di qua e di là) se trova tutto occupato al primo giro
 
