@@ -26,12 +26,11 @@ void crt_shm_semaphores(void);  // crea i semafori per la memoria condivisa
 void crt_shm_segment(void); // crea il segmento di memoria condivisa e fa l'attach
 void crt_fifo_semaphores(void); // crea i semafori per la comunicazione su fifo
 void generate_key(struct Response*, struct Request*); // genera la chiave di utilizzo
-void keyman_sigHand(int); // signal handler del KeyManager
+void keyman_sighand(int); // signal handler del KeyManager
 void close_all(int);  // funz per le operazioni pre-chiusura (signal handler del server)
 
 // variabili globali
 int fifoserver, fifoclient, fifosem_id, shmsem_id, shmid;
-unsigned short max_entry_idx;
 char *fifoserv_pathname;
 Entry *shmptr;
 
@@ -57,27 +56,25 @@ int main (int argc, char *argv[]) {
 
 
   // CREO KEYMANAGER ---------------------------------------------
+  unsigned int max_entry_idx = 0; /* var ausiliaria per migliorare la ricerca delle
+  chiavi con timestamp più vecchio di 5 min */
+
   pid_t km_pid = fork();
   if (km_pid == -1)
     errExit("Server: fork() failed");
 
   else if (km_pid == 0){
     //----KEY MANAGER SECTION
+    const unsigned short time_limit = 300;
 
-    // modifico la signal mask per sbloccare la ricez di SIGALRM
-    sigset_t km_sigset = signal_set;
-    if (sigprocmask(SIG_UNBLOCK, &km_sigset, NULL) == -1)
-      errExit("KeyManager: sigprocmask failed");
+    //imposto un signal handler per KeyManager
+    if (signal(SIGTERM, keyman_sighand) == SIG_ERR)
+      errExit("Server: signal handler setting failed");
 
-    //imposto i signal handler per KeyManager
-    if (signal(SIGTERM, keyman_sigHand) == SIG_ERR || signal(SIGALRM, keyman_sigHand) == SIG_ERR)
-      errExit("KeyManager: signal handler setting failed");
+    //TO_DO -> forse devi modificare la signal mask per sbloccare la ricez di SIGALRM
 
-    while (1){
-      printf("\n\nALARM...\n\n");
-      alarm(5); //TO_DO -> metti a 30 sec l'alarm
-      pause();
-    }
+    //TO_DO imposto il signal handler per SIGALRM -> elimina le entry più vecchie di 5min
+    //if (signal(SIGALRM, ))
   }
   else{
     //----PARENT SECTION
@@ -218,12 +215,12 @@ void crt_shm_segment(void){
 
   // "shmid" e "shmptr" sono variabili globali
 
-  shmid = shmget(key, SHM_DIM * sizeof(struct Entry), IPC_CREAT | S_IRUSR | S_IWUSR);
+  shmid = shmget(key, SHM_DIM * sizeof(Entry), IPC_CREAT | S_IRUSR | S_IWUSR);
   if (shmid == -1)
     errExit("Server: shmget failed");
 
   // "attach" della memoria condivisa
-  shmptr = (struct Entry *) shmat(shmid, NULL, 0);
+  shmptr = (Entry *) shmat(shmid, NULL, 0);
   if (shmptr == (void *)(-1))
     errExit("Server: shmat failed");
 }
@@ -259,6 +256,9 @@ void generate_key(struct Response *response, struct Request *client_data){
    *
    *  per il servizio controllo solo i primi 2 caratteri di service
    *  (sono già sicuro che le stringhe siano corrette)
+   *
+   *  C'è possibilità che una chiave si ripeta solo ogni 278 ore circa,
+   *  ma le chiavi vengono eliminate dopo 5min, quindi la ripetizione è impossibile
    */
   unsigned long timestamp = time(NULL);
   srand(timestamp);
@@ -269,17 +269,7 @@ void generate_key(struct Response *response, struct Request *client_data){
 
 //==============================================================================
 // signal handler del KeyManager
-void keyman_sigHand(int sig) {
-  switch (sig){
-    case SIGALRM: {
-      cus_t time_limit = 300;
-      del_old_entries(shmptr, time_limit, (cus_t)max_entry_idx);
-      break;
-    }
-
-    default: exit(EXIT_SUCCESS); break;
-  }
-}
+void keyman_sighand(int sig) { exit(EXIT_SUCCESS); }
 
 //==============================================================================
 // funz per le operazioni pre-chiusura (signal handler del server)

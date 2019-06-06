@@ -1,6 +1,6 @@
 -implementa keyManager
 -prova a fare una fork nella funz che elimina le entry
--valuta: prova a fare in modo che il server cerchi lo spazio libero con una specie di funz di hashing (saltando di qua e di là) se trova tutto occupato al primo giro
+-prova a fare in modo che il server cerchi lo spazio libero con una specie di funz di hashing (saltando di qua e di là) se trova tutto occupato al primo giro
 
 -in server, MIGLIORA la funz per chiudere tutti i file descriptor ecc usando gli exit handler (e inoltra SIGTERM)
 -crea signal handler per inoltrare SIGTERM anche a KeyManager
