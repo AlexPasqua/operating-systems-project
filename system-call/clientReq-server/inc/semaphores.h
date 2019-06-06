@@ -4,7 +4,7 @@
 #define SRVSEM 0
 #define CLIMUTEX 1
 
-// definition of the union semun
+// definizione della union semun
 union semun {
   int val;
   struct semid_ds *buf;

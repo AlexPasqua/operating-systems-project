@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include "myfifo.h"
 
-#define SHM_DIM 100
+#define SHM_DIM 5
 
 typedef const unsigned short cus_t;
 
@@ -16,7 +16,7 @@ typedef struct Entry {
 } Entry;
 
 // dichiarazione funzioni
-void del_old_entries(Entry *, cus_t, cus_t);
-bool ts_too_old(const long unsigned ts, cus_t time_limit);
+void del_old_entries(Entry *shmptr, cus_t time_limit);
+bool ts_too_old(const long unsigned entry_ts, cus_t time_limit);
 
 #endif

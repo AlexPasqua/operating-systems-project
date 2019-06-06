@@ -46,7 +46,7 @@ int main (int argc, char *argv[]) {
     errExit("clientExec: shmat failed");
   //--------------------------------------------------------------
 
-  // leggi ma memoria condivisa
+  // leggi da memoria condivisa
   bool found = false;
   unsigned int entry_idx = 0;
   for ( ; entry_idx < SHM_DIM; entry_idx++){
@@ -87,6 +87,9 @@ int main (int argc, char *argv[]) {
     errExit("ClientExec: excl failed");
     //----------------------------------------------------------
   }
+
+  else
+    printf("Coppia chiave-utente non presente in memoria\n");
 
   return 0;
 }

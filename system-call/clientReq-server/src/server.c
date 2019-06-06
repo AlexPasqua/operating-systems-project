@@ -31,7 +31,6 @@ void close_all(int);  // funz per le operazioni pre-chiusura (signal handler del
 
 // variabili globali
 int fifoserver, fifoclient, fifosem_id, shmsem_id, shmid;
-unsigned short max_entry_idx;
 char *fifoserv_pathname;
 Entry *shmptr;
 
@@ -65,20 +64,23 @@ int main (int argc, char *argv[]) {
     //----KEY MANAGER SECTION
 
     // modifico la signal mask per sbloccare la ricez di SIGALRM
-    sigset_t km_sigset = signal_set;
-    if (sigprocmask(SIG_UNBLOCK, &km_sigset, NULL) == -1)
+    if (sigdelset(&signal_set, SIGALRM) == -1)
+      errExit("KeyManager: sigdelset failed");
+
+    if (sigprocmask(SIG_SETMASK, &signal_set, NULL) == -1)
       errExit("KeyManager: sigprocmask failed");
 
     //imposto i signal handler per KeyManager
     if (signal(SIGTERM, keyman_sigHand) == SIG_ERR || signal(SIGALRM, keyman_sigHand) == SIG_ERR)
       errExit("KeyManager: signal handler setting failed");
+    //-----------------------------------------------------------
 
     while (1){
-      printf("\n\nALARM...\n\n");
-      alarm(5); //TO_DO -> metti a 30 sec l'alarm
+      alarm(30);
       pause();
     }
   }
+
   else{
     //----PARENT SECTION
 
@@ -91,7 +93,6 @@ int main (int argc, char *argv[]) {
 
     // creo e apro FIFOSERVER --------------------------------------
     fifoserv_pathname = "/tmp/FIFOSERVER";  // (var globale)
-    char *fifocli_pathname = "/tmp/FIFOCLIENT";
     if (mkfifo(fifoserv_pathname, S_IRUSR | S_IWUSR) == -1)
       errExit("mkfifo (FIFOSERVER) failed");
 
@@ -102,6 +103,7 @@ int main (int argc, char *argv[]) {
 
 
     // continua a controllare richieste dei client------------------------------
+    char *fifocli_pathname = "/tmp/FIFOCLIENT";
     struct Request client_data;
     struct Response resp;
     int bR, entry_idx = 0;
@@ -127,13 +129,13 @@ int main (int argc, char *argv[]) {
 
       // scrivo in memoria condivisa -----------------------------
       //trovo una entry libera
-      for (entry_idx = 0; (shmptr + entry_idx)->key != 0; entry_idx++){
+      for (entry_idx = 0; (shmptr + entry_idx)->key != 0 && entry_idx <= SHM_DIM; entry_idx++){
         if (entry_idx >= SHM_DIM){
           entry_idx = -1; //viene incrementato alla fine del ciclo
 
           /* se entra nell'if significa che tutte le entry sono piene, quindi sblocco
           il semaforo della shm e mando un SIGALRM a KeyManager per vedere se sia
-          possibile eliminare qualche entry, poi riprovo la scrittura*/
+          possibile eliminare già subito qualche entry, poi riprovo la scrittura*/
           semOp(shmsem_id, 0, 1);
           if (kill(km_pid, SIGALRM) == -1)
             errExit("server: failed to send SIGALRM to KeyManager");
@@ -142,22 +144,20 @@ int main (int argc, char *argv[]) {
         }
       }
 
-      // una volta trovato il posto in cui scrivere...
-      if (entry_idx > max_entry_idx) { max_entry_idx = entry_idx; }
+      // una volta trovato il posto in cui scrivere, scrivo
       strcpy((shmptr + entry_idx)->user, client_data.user);
       (shmptr + entry_idx)->key = resp.key;
       (shmptr + entry_idx)->timestamp = time(NULL);
       //----------------------------------------------------------
 
+      // sblocco semaforo memoria condivisa
+      semOp(shmsem_id, 0, 1);
 
       // rispondo al client
       if (write(fifoclient, &resp, sizeof(struct Response)) != sizeof(struct Response))
         errExit("Server failed to write on FIFOCLIENT");
 
       printf("KEY = %lu\n\n", resp.key);
-
-      // sblocco semaforo memoria condivisa
-      semOp(shmsem_id, 0, 1);
 
       // chiudo FIFOCLIENT
       if (close(fifoclient) == -1)
@@ -272,8 +272,12 @@ void generate_key(struct Response *response, struct Request *client_data){
 void keyman_sigHand(int sig) {
   switch (sig){
     case SIGALRM: {
-      cus_t time_limit = 300;
-      del_old_entries(shmptr, time_limit, (cus_t)max_entry_idx);
+      cus_t time_limit = 300; //5min
+
+      semOp(shmsem_id, 0, -1);
+      del_old_entries(shmptr, time_limit);
+      semOp(shmsem_id, 0, 1);
+
       break;
     }
 
@@ -294,14 +298,9 @@ void close_all(int sig){
   if (unlink(fifoserv_pathname) != 0)
     errExit("Server failed to unlink FIFOSERVER");
 
-
   // elimino il set di semafori per le FIFO
   if (semctl(fifosem_id, 0/*ignored*/, IPC_RMID, NULL) == -1)
     errExit("Server failed to remove fifoes' semaphores set");
-
-  // aspetto la terminazione di KeyManager per non farlo diverntare orfano
-  /*if (waitpid(km_pid, NULL, 0) == -1)
-    errExit("Server: waitpid() failed");*/
 
   // detach & delete memoria condivisa
   if (shmdt(shmptr) != 0)
