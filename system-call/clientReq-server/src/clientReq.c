@@ -13,26 +13,10 @@
 #include "myfifo.h"
 #include "semaphores.h"
 
+// dichiarazione funzioni
+bool check_service_input(char *service);  // per controllare l'inserimento del servizio richiesto
+void print_recap(struct Request, struct Response);  // funz per stampare il riepilogo dei dati
 
-//==============================================================================
-// funz per controllare l'inserimento del servizio richiesto
-bool check_service_input(char *service){
-  char *services[] = {"stampa", "salva", "invia"};
-
-  for (int i = 0; i < 3; i++)
-    if (strcmp(service, services[i]) == 0)
-      return true;
-
-  printf("\nErr. Il nome va scelto tra \"stampa\" - \"salva\" - \"invia\"\n");
-  return false;
-}
-
-//==============================================================================
-// funz per stampare il riepilogo dei dati
-void print_recap(struct Request req, struct Response resp){
-  printf("\n\ncodice identificativo: %s\nservizio: %s\n", req.user, req.service);
-  printf("chiave rilasciata dal server: %lu\n\n", resp.key);
-}
 
 //==============================================================================
 int main (int argc, char *argv[]) {
@@ -112,4 +96,23 @@ int main (int argc, char *argv[]) {
     //------------------------------------------------------------
 
     return 0;
+}
+
+
+//==============================================================================
+bool check_service_input(char *service){
+  char *services[] = {"stampa", "salva", "invia"};
+
+  for (int i = 0; i < 3; i++)
+    if (strcmp(service, services[i]) == 0)
+      return true;
+
+  printf("\nErr. Il nome va scelto tra \"stampa\" - \"salva\" - \"invia\"\n");
+  return false;
+}
+
+//==============================================================================
+void print_recap(struct Request req, struct Response resp){
+  printf("\n\ncodice identificativo: %s\nservizio: %s\n", req.user, req.service);
+  printf("chiave rilasciata dal server: %lu\n\n", resp.key);
 }
