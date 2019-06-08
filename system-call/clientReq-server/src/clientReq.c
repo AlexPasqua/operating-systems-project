@@ -99,16 +99,6 @@ int main (int argc, char *argv[]) {
     //------------------------------------------------------------
 
     exit(EXIT_SUCCESS);
-    // chiudo FIFOSERVER, chiudo ed elimino FIFOCLIENT -----------
-    /*if (close(fifoserver) == -1)
-      errExit("ClientReq failed to close FIFOSERVER");
-
-    if (close(fifoclient) == -1)
-      errExit("ClientReq failed to close FIFOCLIENT");
-
-    if (unlink(fifocli_pathname) != 0)
-      errExit("ClientReq failed to unlink FIFOCLIENT");*/
-    //------------------------------------------------------------
 
     return 0;
 }
