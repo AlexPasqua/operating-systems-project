@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
+#include <signal.h>
 
 #include "errExit.h"
 #include "myfifo.h"
@@ -16,10 +17,24 @@
 // dichiarazione funzioni
 bool check_service_input(char *service);  // per controllare l'inserimento del servizio richiesto
 void print_recap(struct Request, struct Response);  // funz per stampare il riepilogo dei dati
+void close_all(void); // chiude/unlinka le FIFO
+void sigHand(int sig);  // signal handler per SIGINT
+
+//variabili globali
+int fifoserver = -1, fifoclient = -1;
+char *fifocli_pathname = "";
 
 
 //==============================================================================
 int main (int argc, char *argv[]) {
+    // imposto un exit handler ed un signal handler per SIGINT (ctrl-C)
+    if (atexit(close_all) != 0)
+      errExit("ClientReq: atexit() failed");
+
+    if (signal(SIGINT, sigHand) == SIG_ERR)
+      errExit("ClientReq: signal() failed");
+
+
     printf("Benvenuto! I servizi disponibili sono i seguenti:\n - stampa\n - salva\n - invia");
 
     struct Request req;
@@ -53,18 +68,18 @@ int main (int argc, char *argv[]) {
 
 
     // creo FIFOCLIENT, apro FIFOSERVER, apro FIFOCLIENT ---------
-    char *fifocli_pathname = "/tmp/FIFOCLIENT";
+    fifocli_pathname = "/tmp/FIFOCLIENT";
     char *fifoserv_pathname = "/tmp/FIFOSERVER";
     if (mkfifo(fifocli_pathname, S_IRUSR | S_IWUSR) == -1)
       errExit("mkfifo (FIFOCLIENT) failed");
 
-    int fifoserver = open(fifoserv_pathname, O_WRONLY);
+    fifoserver = open(fifoserv_pathname, O_WRONLY);
     if (fifoserver == -1)
       errExit("ClientReq failed to open FIFOSERVER in write-only mode");
 
     semOp(semid, SRVSEM, 1);  //sblocco il server in attesa di FIFOCLIENT
 
-    int fifoclient = open(fifocli_pathname, O_RDONLY);
+    fifoclient = open(fifocli_pathname, O_RDONLY);
     if (fifoclient == -1)
       errExit("ClientReq failed to open FIFOCLIENT in read-only mode");
     //------------------------------------------------------------
@@ -83,16 +98,16 @@ int main (int argc, char *argv[]) {
     print_recap(req, resp); //stampa riepilogo dati
     //------------------------------------------------------------
 
-
+    exit(EXIT_SUCCESS);
     // chiudo FIFOSERVER, chiudo ed elimino FIFOCLIENT -----------
-    if (close(fifoserver) == -1)
+    /*if (close(fifoserver) == -1)
       errExit("ClientReq failed to close FIFOSERVER");
 
     if (close(fifoclient) == -1)
       errExit("ClientReq failed to close FIFOCLIENT");
 
     if (unlink(fifocli_pathname) != 0)
-      errExit("ClientReq failed to unlink FIFOCLIENT");
+      errExit("ClientReq failed to unlink FIFOCLIENT");*/
     //------------------------------------------------------------
 
     return 0;
@@ -115,4 +130,23 @@ bool check_service_input(char *service){
 void print_recap(struct Request req, struct Response resp){
   printf("\n\ncodice identificativo: %s\nservizio: %s\n", req.user, req.service);
   printf("chiave rilasciata dal server: %lu\n\n", resp.key);
+}
+
+//==============================================================================
+void sigHand(int sig){
+  printf("\nClosing ClientReq...\n");
+  exit(EXIT_SUCCESS);
+}
+
+//==============================================================================
+void close_all(){
+  // chiudo FIFOSERVER, chiudo ed elimino FIFOCLIENT
+  if (close(fifoserver) == -1 && fifoserver != -1)  // fifoserver != -1 indica che è stata aperta la FIFO
+    errExit("ClientReq failed to close FIFOSERVER");
+
+  if (close(fifoclient) == -1 && fifoclient != -1)
+    errExit("ClientReq failed to close FIFOCLIENT");
+
+  if (unlink(fifocli_pathname) != 0 && strcmp(fifocli_pathname, "") != 0)
+    errExit("ClientReq failed to unlink FIFOCLIENT");
 }
