@@ -23,6 +23,7 @@ void sigHand(int sig);  // signal handler per SIGINT
 //variabili globali
 int fifoserver = -1, fifoclient = -1;
 char *fifocli_pathname = "";
+pid_t child;
 
 
 //==============================================================================
@@ -89,11 +90,26 @@ int main (int argc, char *argv[]) {
     if (write(fifoserver, &req, sizeof(struct Request)) != sizeof(struct Request))
       errExit("clientReq failed to write correctly on FIFOSERVER");
 
-    // leggo la risposta del server (chiave)
+    // in caso di latenze, invio un messaggio di spiegazione
+    child = fork();
+    if (child == 0){
+      sleep(4);
+      printf("\nMemoria momentanealmente piena, attendere qualche istante...");
+      while (1){
+        sleep(10);
+        printf("E' necessario attendere ancora un po'...\n");
+      }
+    }
+
+    // leggo la risposta del server (chiave) ---------------------
     struct Response resp;
     int bR = read(fifoclient, &resp, sizeof(struct Response));
     if (bR == -1) { errExit("Client failed to read key from FIFOCLIENT"); }
     else if (bR != sizeof(struct Response)) { errExit("Looks like clientReq didn't received a key correctly"); }
+
+    // impedisco a figlio di inviare il messaggio di memoria piena
+    if (kill(child, SIGKILL) == -1)
+      errExit("ClientReq: kill failed");
 
     print_recap(req, resp); //stampa riepilogo dati
     //------------------------------------------------------------
@@ -124,19 +140,23 @@ void print_recap(struct Request req, struct Response resp){
 
 //==============================================================================
 void sigHand(int sig){
-  printf("\nClosing ClientReq...\n");
+  if (child != 0)
+    printf("\n\nClosing ClientReq...\n");
+
   exit(EXIT_SUCCESS);
 }
 
 //==============================================================================
 void close_all(){
-  // chiudo FIFOSERVER, chiudo ed elimino FIFOCLIENT
-  if (close(fifoserver) == -1 && fifoserver != -1)  // fifoserver != -1 indica che è stata aperta la FIFO
-    errExit("ClientReq failed to close FIFOSERVER");
+  if (child != 0){
+    // chiudo FIFOSERVER, chiudo ed elimino FIFOCLIENT
+    if (close(fifoserver) == -1 && fifoserver != -1)  // fifoserver != -1 indica che è stata aperta la FIFO
+      errExit("ClientReq failed to close FIFOSERVER");
 
-  if (close(fifoclient) == -1 && fifoclient != -1)
-    errExit("ClientReq failed to close FIFOCLIENT");
+    if (close(fifoclient) == -1 && fifoclient != -1)
+      errExit("ClientReq failed to close FIFOCLIENT");
 
-  if (unlink(fifocli_pathname) != 0 && strcmp(fifocli_pathname, "") != 0)
-    errExit("ClientReq failed to unlink FIFOCLIENT");
+    if (unlink(fifocli_pathname) != 0 && strcmp(fifocli_pathname, "") != 0)
+      errExit("ClientReq failed to unlink FIFOCLIENT");
+  }
 }

@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include "myfifo.h"
 
-#define SHM_DIM 5
+#define SHM_DIM 350
 
 typedef const unsigned short cus_t;
 

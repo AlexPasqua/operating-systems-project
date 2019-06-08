@@ -1,1 +1,2 @@
-funziona ma non ho usato entry_limit
+Non ho usato entry_limit;
+Memoria a dim fissa, il client aspetta finché non si libera
