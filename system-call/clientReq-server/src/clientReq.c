@@ -9,6 +9,7 @@
 #include <sys/ipc.h>
 #include <sys/sem.h>
 #include <signal.h>
+#include <sys/wait.h>
 
 #include "errExit.h"
 #include "myfifo.h"
@@ -111,6 +112,9 @@ int main (int argc, char *argv[]) {
     if (kill(child, SIGKILL) == -1)
       errExit("ClientReq: kill failed");
 
+    if (wait(NULL) == -1)
+      errExit("ClientReq: wait failed");
+
     print_recap(req, resp); //stampa riepilogo dati
     //------------------------------------------------------------
 
@@ -140,15 +144,21 @@ void print_recap(struct Request req, struct Response resp){
 
 //==============================================================================
 void sigHand(int sig){
-  if (child != 0)
-    printf("\n\nClosing ClientReq...\n");
+  if (child != 0){
+    if (kill(child, SIGKILL) == -1)
+      errExit("ClientReq: kill failed");
 
+    if (wait(NULL) == -1)
+      errExit("ClientReq: wait failed");
+  }
+
+  printf("\n\nClosing ClientReq...\n");
   exit(EXIT_SUCCESS);
 }
 
 //==============================================================================
 void close_all(){
-  if (child != 0){
+  if (child != 0){  //(questo if è teoricamente suprefluo)
     // chiudo FIFOSERVER, chiudo ed elimino FIFOCLIENT
     if (close(fifoserver) == -1 && fifoserver != -1)  // fifoserver != -1 indica che è stata aperta la FIFO
       errExit("ClientReq failed to close FIFOSERVER");
