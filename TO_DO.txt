@@ -1,10 +1,5 @@
 
 
--prova a fare una fork nella funz che elimina le entry
--prova a fare in modo che il server cerchi lo spazio libero con una specie di funz di hashing (saltando di qua e di là) se trova tutto occupato al primo giro
-
--in server, MIGLIORA la funz per chiudere tutti i file descriptor ecc usando gli exit handler
--crea signal handler per inoltrare SIGTERM anche a KeyManager
 -valuta di collassare le 2 funz in server per creare semafori in una sola
 	-prova a metterla in semaphores.c
 

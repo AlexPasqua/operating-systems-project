@@ -33,6 +33,7 @@ void close_all(int);  // funz per le operazioni pre-chiusura (signal handler del
 int fifoserver, fifoclient, fifosem_id, shmsem_id, shmid;
 char *fifoserv_pathname;
 Entry *shmptr;
+pid_t km_pid;
 
 
 //==============================================================================
@@ -56,7 +57,7 @@ int main (int argc, char *argv[]) {
 
 
   // CREO KEYMANAGER ---------------------------------------------
-  pid_t km_pid = fork();
+  km_pid = fork();
   if (km_pid == -1)
     errExit("Server: fork() failed");
 
@@ -288,6 +289,13 @@ void keyman_sigHand(int sig) {
 //==============================================================================
 // funz per le operazioni pre-chiusura (signal handler del server)
 void close_all(int sig){
+  // inoltro SIGTERM al KeyManager
+  if (kill(km_pid, SIGTERM) == -1)
+    errExit("Server: kill failed");
+
+  if (wait(NULL) == -1)
+    errExit("Server: wait failed");
+
   // chiudo FIFOCLIENT
   close(fifoclient);  //niente controllo perché potrebbe essere già stata chiusa nel while
 
