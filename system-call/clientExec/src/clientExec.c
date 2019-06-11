@@ -32,8 +32,21 @@ int main (int argc, char *argv[]) {
   get_shm_semaphores();
   semOp(semid, 0, -1);
 
-  //get e attach della memoria condivisa--------------------------
-  key_t shm_key = ftok("../clientReq-server/src/server.c", 'a');
+  //get e attach delle memorie condivise--------------------------
+  key_t infoshm_key = ftok("../clientReq-server/src/shmem.c", 'a');
+  if (infoshm_key == -1) errExit("ClientExec: ftok (infoshm_key) failed");
+
+  int infoshm_id = shmget(infoshm_key, 0, S_IRUSR | S_IWUSR);
+  if (infoshm_id == -1) errExit("clientExec: shmget (infoshm_id) failed");
+
+  struct my_shm_info *info_ptr = (struct my_shm_info *) shmat(infoshm_id, NULL, 0);
+  if (info_ptr == (void *)(-1)) errExit("clientExec: shmat (info_ptr) failed");
+
+  char proj = info_ptr->key_proj;
+  unsigned int SHM_DIM = info_ptr->SHM_DIM;
+
+
+  key_t shm_key = ftok("../clientReq-server/src/server.c", proj);
   if (shm_key == -1)
     errExit("ClientExec: ftok failed");
 
@@ -45,6 +58,12 @@ int main (int argc, char *argv[]) {
   if (shmptr == (void *)(-1))
     errExit("clientExec: shmat failed");
   //--------------------------------------------------------------
+
+  //TEST
+  printf("\nREADING...\n");
+  for (unsigned int i = 0; i < SHM_DIM; i++){
+    printf("Entry %u:\n\tuser: %s\n\tkey: %lu\n\ttimestamp: %lu\n----------------------------------------\n",i,(shmptr+i)->user,(shmptr+i)->key,(shmptr+i)->timestamp);
+  }
 
   // leggi da memoria condivisa
   bool found = false;
@@ -65,7 +84,7 @@ int main (int argc, char *argv[]) {
   semOp(semid, 0, 1);
 
   // detach della mem condivisa
-  if (shmdt(shmptr) == -1)
+  if (shmdt(shmptr) == -1 || shmdt(info_ptr) == -1)
     errExit("clientReq: shmdt failed");
 
   if (found){

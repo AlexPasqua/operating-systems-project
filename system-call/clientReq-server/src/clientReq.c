@@ -96,8 +96,9 @@ int main (int argc, char *argv[]) {
     if (child == 0){
       sleep(4);
       printf("\nMemoria momentanealmente piena, attendere qualche istante...");
+
       while (1){
-        sleep(10);
+        sleep(12);
         printf("E' necessario attendere ancora un po'...\n");
       }
     }

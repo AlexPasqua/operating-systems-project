@@ -1,4 +1,4 @@
-
+-Ripristina i valori che avevi messo come debug con quelli veri
 
 -valuta di collassare le 2 funz in server per creare semafori in una sola
 	-prova a metterla in semaphores.c

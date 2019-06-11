@@ -22,12 +22,13 @@
 
 // dichiarazione funzioni
 void set_sigprocmask(sigset_t*, int);  // imposta la mask dei signal del processo
-void crt_shm_semaphores(void);  // crea i semafori per la memoria condivisa
-void crt_shm_segment(void); // crea il segmento di memoria condivisa e fa l'attach
-void crt_fifo_semaphores(void); // crea i semafori per la comunicazione su fifo
+void crt_shm_semaphores();  // crea i semafori per la memoria condivisa
+void crt_shm_segment(); // crea il segmento di memoria condivisa e fa l'attach
+void crt_fifo_semaphores(); // crea i semafori per la comunicazione su fifo
 void generate_key(struct Response*, struct Request*); // genera la chiave di utilizzo
 void keyman_sigHand(int); // signal handler del KeyManager
 void close_all(int);  // funz per le operazioni pre-chiusura (signal handler del server)
+void expand_shm();
 
 // variabili globali
 int fifoserver, fifoclient, fifosem_id, shmsem_id, shmid, infoshm_id;
@@ -39,7 +40,7 @@ struct my_shm_info *info_ptr;
 
 //==============================================================================
 int main (int argc, char *argv[]) {
-  printf("Server ready!\n\n");
+  printf("Server ready! -> SIGUSR1 = %i, SIGALRM = %i, SIGTERM = %i\n\n", SIGUSR1, SIGALRM, SIGTERM);
 
   // blocco tutti i signal tranne SIGTERM
   sigset_t signal_set;
@@ -49,12 +50,19 @@ int main (int argc, char *argv[]) {
   crt_shm_semaphores();
   semOp(shmsem_id, 0, -1);
 
+  // creo la struct in mem condivisa contenente i dati sulla shm principale
   key_t infoshm_key = ftok("src/shmem.c", 'a');
   if (infoshm_key == -1) errExit("Server: ftok (infoshm_key) failed");
+
   infoshm_id = shmget(infoshm_key, sizeof(struct my_shm_info), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
   if (infoshm_id == -1) errExit("Server: shmget (infoshm_id) failed");
+
   info_ptr = (struct my_shm_info *) shmat(infoshm_id, NULL, 0);
   if (info_ptr == (void *)(-1)) errExit("Server: shmat (info_ptr) failed");
+
+  info_ptr->SHM_DIM = 2;
+  info_ptr->key_proj = 'a';
+  //-----------------------------------------------------------------
 
   // creo il segmento di memoria condivisa e faccio l'attach
   crt_shm_segment();
@@ -73,15 +81,19 @@ int main (int argc, char *argv[]) {
     //----KEY MANAGER SECTION
 
     // modifico la signal mask per sbloccare la ricez di SIGALRM
-    if (sigdelset(&signal_set, SIGALRM) == -1)
+    if (sigdelset(&signal_set, SIGALRM) == -1 || sigdelset(&signal_set, SIGUSR1) == -1)
       errExit("KeyManager: sigdelset failed");
 
     if (sigprocmask(SIG_SETMASK, &signal_set, NULL) == -1)
       errExit("KeyManager: sigprocmask failed");
 
     //imposto i signal handler per KeyManager
-    if (signal(SIGTERM, keyman_sigHand) == SIG_ERR || signal(SIGALRM, keyman_sigHand) == SIG_ERR)
+    if (signal(SIGTERM, keyman_sigHand) == SIG_ERR ||
+        signal(SIGALRM, keyman_sigHand) == SIG_ERR ||
+        signal(SIGUSR1, keyman_sigHand) == SIG_ERR)
+    {
       errExit("KeyManager: signal handler setting failed");
+    }
     //-----------------------------------------------------------
 
     while (1){
@@ -97,7 +109,7 @@ int main (int argc, char *argv[]) {
     if (signal(SIGTERM, close_all) == SIG_ERR)
       errExit("Server: signal handler setting failed");
 
-    // creo un insieme di semafori per gestire la comunicaz su FIFO
+    // creo i semafori per gestire la comunicazione su FIFO
     crt_fifo_semaphores();
 
     // creo e apro FIFOSERVER --------------------------------------
@@ -115,7 +127,8 @@ int main (int argc, char *argv[]) {
     char *fifocli_pathname = "/tmp/FIFOCLIENT";
     struct Request client_data;
     struct Response resp;
-    int bR, offset = 0;
+    int bR;
+    unsigned int offset = 0;
 
     while (1){
       // blocco il server finché un client non crea FIFOCLIENT
@@ -139,24 +152,29 @@ int main (int argc, char *argv[]) {
 
       // scrivo in memoria condivisa -----------------------------
       semOp(shmsem_id, 0, -1);
+      int SHM_DIM = info_ptr->SHM_DIM;
+      short times = 0;
 
       //trovo una entry libera
       for (offset = 0; ((shmptr + offset)->key != 0 && offset < SHM_DIM) || offset >= SHM_DIM; offset++){
-      //for (entry_idx = 0; (shmptr + entry_idx)->key != 0 && entry_idx <= SHM_DIM; entry_idx++){
         if (offset >= SHM_DIM){
-          offset = -1; //viene incrementato alla fine del ciclo
+          if (++times < 2){
+            offset = -1; //viene incrementato alla fine del ciclo
 
-          /* se entra nell'if significa che tutte le entry sono piene, quindi sblocco
-          il semaforo della shm e mando un SIGALRM a KeyManager per vedere se sia
-          possibile eliminare già subito qualche entry, poi riprovo la scrittura*/
-          semOp(shmsem_id, 0, 1);
-          if (kill(km_pid, SIGALRM) == -1)
-            errExit("server: failed to send SIGALRM to KeyManager");
+            /* se entra nell'if significa che tutte le entry sono piene, quindi sblocco
+            il semaforo della shm e mando un SIGALRM a KeyManager per vedere se sia
+            possibile eliminare già subito qualche entry, poi riprovo la scrittura*/
+            semOp(shmsem_id, 0, 1);
+            if (kill(km_pid, SIGALRM) == -1)
+              errExit("server: failed to send SIGALRM to KeyManager");
 
-          sleep(1); /*per evitare uno scorrimento continuo della memoria ed alleggerire
-          un po' il programma, inoltre lascia per un po' il semaforo sbloccato per
-          clientExec, eventualmente*/
-          semOp(shmsem_id, 0, -1);
+            semOp(shmsem_id, 0, -1);
+          }
+
+          else {
+            expand_shm();
+            break;
+          }
         }
       }
 
@@ -164,10 +182,10 @@ int main (int argc, char *argv[]) {
       strcpy((shmptr + offset)->user, client_data.user);
       (shmptr + offset)->key = resp.key;
       (shmptr + offset)->timestamp = time(NULL);
+      semOp(shmsem_id, 0, 1);
+      times = 0;
       //----------------------------------------------------------
 
-      // sblocco semaforo memoria condivisa
-      semOp(shmsem_id, 0, 1);
 
       // rispondo al client
       if (write(fifoclient, &resp, sizeof(struct Response)) != sizeof(struct Response))
@@ -193,6 +211,51 @@ int main (int argc, char *argv[]) {
 
 
 //##############################################################################
+void expand_shm(){
+  // sono già protetto da semafori per l'accesso alla shm
+
+  //imposta nuova dim e proj
+  info_ptr->SHM_DIM *= 2;
+  info_ptr->key_proj ++;
+  unsigned int SHM_DIM = info_ptr->SHM_DIM;
+  char proj = info_ptr->key_proj;
+
+
+  //crea nuova shm
+  key_t new_key = ftok("src/server.c", proj);
+  if (new_key == -1) errExit("Server: ftok (in 'expand_shm') failed");
+
+  int new_shmid = shmget(new_key, SHM_DIM * sizeof(Entry), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+  if (new_shmid == -1) errExit("Server: shmget (in 'expand_shm') failed");
+
+  Entry *new_shmptr = (Entry *) shmat(new_shmid, NULL, 0);
+  if (new_shmptr == (void *)(-1)) errExit("Server: shmat (in 'expand_shm') failed");
+
+
+  //copia contenuto di quella vecchia
+  for (unsigned int i = 0; i < (SHM_DIM / 2); i++){
+    strcpy((new_shmptr + i)->user, (shmptr + i)->user);
+    (new_shmptr + i)->key = (shmptr + i)->key;
+    (new_shmptr + i)->timestamp = (shmptr + i)->timestamp;
+  }
+
+
+  //fai fare il detach al KeyManager (signal user) e l'attach di quella nuova
+  if (kill(km_pid, SIGUSR1) == -1)
+    errExit("Server: kill (SIGUSR1) failed");
+
+
+  //detach di quella vecchia
+  if (shmdt(shmptr) == -1) errExit("Server: shmdt (in 'expand_shm') failed");
+  if (shmctl(shmid, IPC_RMID, NULL) == -1) errExit("Server: shmat (in 'expand_shm') failed");
+
+
+  //imposto i nuovi puntatori
+  shmid = new_shmid;
+  shmptr = new_shmptr;
+}
+
+//==============================================================================
 // imposta la mask dei signal del processo
 void set_sigprocmask(sigset_t *signal_set, int sig_to_allow){
 
@@ -228,18 +291,16 @@ void crt_shm_semaphores(){
 //==============================================================================
 // crea il segmento di memoria condivisa e fa l'attach
 void crt_shm_segment(){
-  key_t key = ftok("src/server.c", 'a');
+  key_t key = ftok("src/server.c", info_ptr->key_proj);
   if (key == -1)
     errExit("Server failed to create a key for the shared mem segment");
 
-  // "shmid" e "shmptr" sono variabili globali
-
-  shmid = shmget(key, SHM_DIM * sizeof(struct Entry), IPC_CREAT | S_IRUSR | S_IWUSR);
+  shmid = shmget(key, info_ptr->SHM_DIM * sizeof(Entry), IPC_CREAT | S_IRUSR | S_IWUSR);
   if (shmid == -1)
     errExit("Server: shmget failed");
 
   // "attach" della memoria condivisa
-  shmptr = (struct Entry *) shmat(shmid, NULL, 0);
+  shmptr = (Entry *) shmat(shmid, NULL, 0);
   if (shmptr == (void *)(-1))
     errExit("Server: shmat failed");
 }
@@ -288,22 +349,42 @@ void generate_key(struct Response *response, struct Request *client_data){
 void keyman_sigHand(int sig) {
   switch (sig){
     case SIGALRM: {
-      cus_t time_limit = 300; //5min
+      cus_t time_limit = 60; //5min
 
       semOp(shmsem_id, 0, -1);
-      del_old_entries(shmptr, time_limit);
+      del_old_entries(shmptr, time_limit, info_ptr->SHM_DIM);
       semOp(shmsem_id, 0, 1);
 
       break;
     }
 
-    default:
+    // signal inviato dal server durante l'espansione della shm
+    case SIGUSR1: {
+      if (shmdt(shmptr) == -1) errExit("KeyManager: shmdt failed");
+
+      // non ho bisogno di semafori, il server blocca già tutti
+      key_t key = ftok("src/server.c", info_ptr->key_proj);
+      if (key == -1) errExit("KeyManager: ftok failed (while expanding shm)");
+
+      //TEST
+      shmid = shmget(key, 0, S_IRUSR | S_IWUSR);
+      if (shmid == -1) errExit("KeyManager: shmget failed (while expanding shm)");
+
+      shmptr = (Entry *) shmat(shmid, NULL, 0);
+      if (shmptr == (void *)(-1)) errExit("KeyManager: shmat failed (while expanding shm)");
+
+      break;
+    }
+
+    case SIGTERM:
       // detach memoria condivisa
       if (shmdt(shmptr) != 0 || shmdt(info_ptr) != 0)
-        errExit("Server: shmdt failed");
+        errExit("KeyManager: shmdt failed");
 
       exit(EXIT_SUCCESS);
       break;
+
+    default: break;
   }
 }
 

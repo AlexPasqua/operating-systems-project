@@ -6,13 +6,13 @@
 #include "myfifo.h"
 
 // implementazione funzioni ----------------------------------------------------
-void del_old_entries(Entry *shmptr, cus_t time_limit){
-  for (int i = 0; i < SHM_DIM; i++){
+void del_old_entries(Entry *shmptr, cus_t time_limit, unsigned int SHM_DIM){
+  for (unsigned int i = 0; i < SHM_DIM; i++){
     if ((shmptr + i)->key != 0 && ts_too_old((shmptr + i)->timestamp, time_limit))
       (shmptr + i)->key = 0;
 
-    else if ((shmptr + i)->key == 0)  //se ne trova una entry libera (probabilmente a causa di clienExec)
-      return;
+    /*else if ((shmptr + i)->key == 0)  //se ne trova una entry libera (probabilmente a causa di clienExec)
+      return;*/
   }
 }
 
