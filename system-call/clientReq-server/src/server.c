@@ -30,10 +30,11 @@ void keyman_sigHand(int); // signal handler del KeyManager
 void close_all(int);  // funz per le operazioni pre-chiusura (signal handler del server)
 
 // variabili globali
-int fifoserver, fifoclient, fifosem_id, shmsem_id, shmid;
+int fifoserver, fifoclient, fifosem_id, shmsem_id, shmid, infoshm_id;
 char *fifoserv_pathname;
 Entry *shmptr;
 pid_t km_pid;
+struct my_shm_info *info_ptr;
 
 
 //==============================================================================
@@ -47,6 +48,13 @@ int main (int argc, char *argv[]) {
   //creo i semafori per la memoria condivisa
   crt_shm_semaphores();
   semOp(shmsem_id, 0, -1);
+
+  key_t infoshm_key = ftok("src/shmem.c", 'a');
+  if (infoshm_key == -1) errExit("Server: ftok (infoshm_key) failed");
+  infoshm_id = shmget(infoshm_key, sizeof(struct my_shm_info), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+  if (infoshm_id == -1) errExit("Server: shmget (infoshm_id) failed");
+  info_ptr = (struct my_shm_info *) shmat(infoshm_id, NULL, 0);
+  if (info_ptr == (void *)(-1)) errExit("Server: shmat (info_ptr) failed");
 
   // creo il segmento di memoria condivisa e faccio l'attach
   crt_shm_segment();
@@ -131,7 +139,7 @@ int main (int argc, char *argv[]) {
 
       // scrivo in memoria condivisa -----------------------------
       semOp(shmsem_id, 0, -1);
-      
+
       //trovo una entry libera
       for (offset = 0; ((shmptr + offset)->key != 0 && offset < SHM_DIM) || offset >= SHM_DIM; offset++){
       //for (entry_idx = 0; (shmptr + entry_idx)->key != 0 && entry_idx <= SHM_DIM; entry_idx++){
@@ -219,7 +227,7 @@ void crt_shm_semaphores(){
 
 //==============================================================================
 // crea il segmento di memoria condivisa e fa l'attach
-void crt_shm_segment(void){
+void crt_shm_segment(){
   key_t key = ftok("src/server.c", 'a');
   if (key == -1)
     errExit("Server failed to create a key for the shared mem segment");
@@ -238,7 +246,7 @@ void crt_shm_segment(void){
 
 //==============================================================================
 // crea i semafori per la comunicazione su fifo
-void crt_fifo_semaphores(void){
+void crt_fifo_semaphores(){
   key_t key = ftok("src/semaphores.c", 'a');
   if (key == -1)
     errExit("Server failed to create a key for the fifo semaphores set");
@@ -291,7 +299,7 @@ void keyman_sigHand(int sig) {
 
     default:
       // detach memoria condivisa
-      if (shmdt(shmptr) != 0)
+      if (shmdt(shmptr) != 0 || shmdt(info_ptr) != 0)
         errExit("Server: shmdt failed");
 
       exit(EXIT_SUCCESS);
@@ -323,11 +331,11 @@ void close_all(int sig){
   if (semctl(fifosem_id, 0/*ignored*/, IPC_RMID, NULL) == -1)
     errExit("Server failed to remove fifoes' semaphores set");
 
-  // detach & delete memoria condivisa
-  if (shmdt(shmptr) != 0)
+  // detach & delete memorie condivise
+  if (shmdt(shmptr) != 0 || shmdt(info_ptr) != 0)
     errExit("Server: shmdt failed");
 
-  if (shmctl(shmid, IPC_RMID, NULL) != 0)
+  if (shmctl(shmid, IPC_RMID, NULL) != 0 || shmctl(infoshm_id, IPC_RMID, NULL) != 0)
     errExit("Server failed to delete shared memory segment");
 
   // elimino il set di semafori per la memoria condivisa

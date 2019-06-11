@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include "myfifo.h"
 
-#define SHM_DIM 350
+//#define SHM_DIM 350
 
 typedef const unsigned short cus_t;
 
@@ -14,6 +14,11 @@ typedef struct Entry {
   server_k key;
   unsigned long timestamp;
 } Entry;
+
+struct my_shm_info {
+  unsigned int SHM_DIM;
+  char key_proj;
+};
 
 // dichiarazione funzioni
 void del_old_entries(Entry *shmptr, cus_t time_limit);

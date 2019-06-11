@@ -1,3 +1,2 @@
--ho aggiunto lo sleep(1) in server.c nel ciclo che cerca le entry nel caso in cui la mem sia piena, per alleggerire il programma
-
--fixato bug di clientExec
+Creato info_shm, messo il detach e l'eliminazione in close_all e il detach anche da keyManager.
+Commentato il "#define SHM_DIM 350"
