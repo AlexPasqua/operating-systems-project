@@ -107,7 +107,7 @@ int main (int argc, char *argv[]) {
     char *fifocli_pathname = "/tmp/FIFOCLIENT";
     struct Request client_data;
     struct Response resp;
-    int bR, entry_idx = 0;
+    int bR, offset = 0;
     while (1){
       // blocco il server finché un client non crea FIFOCLIENT
       semOp(fifosem_id, SRVSEM, -1);
@@ -130,9 +130,10 @@ int main (int argc, char *argv[]) {
 
       // scrivo in memoria condivisa -----------------------------
       //trovo una entry libera
-      for (entry_idx = 0; (shmptr + entry_idx)->key != 0 && entry_idx <= SHM_DIM; entry_idx++){
-        if (entry_idx >= SHM_DIM){
-          entry_idx = -1; //viene incrementato alla fine del ciclo
+      for (offset = 0; ((shmptr + offset)->key != 0 && offset < SHM_DIM) || offset >= SHM_DIM; offset++){
+      //for (entry_idx = 0; (shmptr + entry_idx)->key != 0 && entry_idx <= SHM_DIM; entry_idx++){
+        if (offset >= SHM_DIM){
+          offset = -1; //viene incrementato alla fine del ciclo
 
           /* se entra nell'if significa che tutte le entry sono piene, quindi sblocco
           il semaforo della shm e mando un SIGALRM a KeyManager per vedere se sia
@@ -141,14 +142,17 @@ int main (int argc, char *argv[]) {
           if (kill(km_pid, SIGALRM) == -1)
             errExit("server: failed to send SIGALRM to KeyManager");
 
+          sleep(1); /*per evitare uno scorrimento continuo della memoria ed alleggerire
+          un po' il programma, inoltre lascia per un po' il semaforo sbloccato per
+          clientExec, eventualmente*/
           semOp(shmsem_id, 0, -1);
         }
       }
 
       // una volta trovato il posto in cui scrivere, scrivo
-      strcpy((shmptr + entry_idx)->user, client_data.user);
-      (shmptr + entry_idx)->key = resp.key;
-      (shmptr + entry_idx)->timestamp = time(NULL);
+      strcpy((shmptr + offset)->user, client_data.user);
+      (shmptr + offset)->key = resp.key;
+      (shmptr + offset)->timestamp = time(NULL);
       //----------------------------------------------------------
 
       // sblocco semaforo memoria condivisa

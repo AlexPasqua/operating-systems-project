@@ -1,2 +1,3 @@
-Non ho usato entry_limit;
-Memoria a dim fissa, il client aspetta finché non si libera
+-ho aggiunto lo sleep(1) in server.c nel ciclo che cerca le entry nel caso in cui la mem sia piena, per alleggerire il programma
+
+-fixato bug di clientExec

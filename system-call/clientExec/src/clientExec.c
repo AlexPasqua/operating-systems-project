@@ -30,14 +30,14 @@ int main (int argc, char *argv[]) {
 
   // get dei semafori per la memoria condivisa
   get_shm_semaphores();
-  semOp(semid, 0, -1); //mi blocco (perché server ha già azzerato il semaforo)
+  semOp(semid, 0, -1);
 
   //get e attach della memoria condivisa--------------------------
   key_t shm_key = ftok("../clientReq-server/src/server.c", 'a');
   if (shm_key == -1)
     errExit("ClientExec: ftok failed");
 
-  int shmid = shmget(shm_key, 0/*ignored*/, S_IRUSR | S_IWUSR);
+  int shmid = shmget(shm_key, 0, S_IRUSR | S_IWUSR);
   if (shmid == -1)
     errExit("clientExec: shmget failed");
 
@@ -70,7 +70,7 @@ int main (int argc, char *argv[]) {
 
   if (found){
     char *services[] = {"stampa", "salva", "invia"};
-    short service_idx = argv[2][10] - 48;
+    short service_idx = argv[2][9] - 48;
     printf("Coppia chiave-utente corretta! Eseguo %s...\n", services[service_idx]);
 
     // lancio il programma desiderato --------------------------

@@ -25,8 +25,6 @@ int main (int argc, char *argv[]) {
 
   struct mymsg message;
   message.mtype = 1;
-  /*message.mtext = (char *) malloc(100 * sizeof(char));
-  message.mtext = "";*/
   for (int i = 2; i < argc; i++)
     strcat(message.mtext, strcat(argv[i], " "));
 
