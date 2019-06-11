@@ -40,7 +40,7 @@ struct my_shm_info *info_ptr;
 
 //==============================================================================
 int main (int argc, char *argv[]) {
-  printf("Server ready! -> SIGUSR1 = %i, SIGALRM = %i, SIGTERM = %i\n\n", SIGUSR1, SIGALRM, SIGTERM);
+  printf("Server ready!\n\n");
 
   // blocco tutti i signal tranne SIGTERM
   sigset_t signal_set;
@@ -54,13 +54,13 @@ int main (int argc, char *argv[]) {
   key_t infoshm_key = ftok("src/shmem.c", 'a');
   if (infoshm_key == -1) errExit("Server: ftok (infoshm_key) failed");
 
-  infoshm_id = shmget(infoshm_key, sizeof(struct my_shm_info), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+  infoshm_id = shmget(infoshm_key, sizeof(struct my_shm_info), IPC_CREAT | S_IRUSR | S_IWUSR);
   if (infoshm_id == -1) errExit("Server: shmget (infoshm_id) failed");
 
   info_ptr = (struct my_shm_info *) shmat(infoshm_id, NULL, 0);
   if (info_ptr == (void *)(-1)) errExit("Server: shmat (info_ptr) failed");
 
-  info_ptr->SHM_DIM = 2;
+  info_ptr->SHM_DIM = 350;
   info_ptr->key_proj = 'a';
   //-----------------------------------------------------------------
 
@@ -225,7 +225,7 @@ void expand_shm(){
   key_t new_key = ftok("src/server.c", proj);
   if (new_key == -1) errExit("Server: ftok (in 'expand_shm') failed");
 
-  int new_shmid = shmget(new_key, SHM_DIM * sizeof(Entry), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+  int new_shmid = shmget(new_key, SHM_DIM * sizeof(Entry), IPC_CREAT | S_IRUSR | S_IWUSR);
   if (new_shmid == -1) errExit("Server: shmget (in 'expand_shm') failed");
 
   Entry *new_shmptr = (Entry *) shmat(new_shmid, NULL, 0);
@@ -321,7 +321,7 @@ void crt_fifo_semaphores(){
   il secondo è per mutua esclusione tra i client*/
   union semun arg;
   arg.array = sem_values;
-  if (semctl(fifosem_id, 0/*ignored*/, SETALL, arg) == -1)
+  if (semctl(fifosem_id, 0, SETALL, arg) == -1)
     errExit("Server failed to set fifoes' semaphores values");
 }
 
@@ -402,14 +402,15 @@ void close_all(int sig){
   close(fifoclient);  //niente controllo perché potrebbe essere già stata chiusa nel while
 
   // chiudo ed elimino FIFOSERVER
-  if (close(fifoserver) == -1)
-    errExit("Server failed to close FIFOSERVER");
+  close(fifoserver);
+  /*if (close(fifoserver) == -1)
+    errExit("Server failed to close FIFOSERVER");*/
 
   if (unlink(fifoserv_pathname) != 0)
     errExit("Server failed to unlink FIFOSERVER");
 
   // elimino il set di semafori per le FIFO
-  if (semctl(fifosem_id, 0/*ignored*/, IPC_RMID, NULL) == -1)
+  if (semctl(fifosem_id, 0, IPC_RMID, NULL) == -1)
     errExit("Server failed to remove fifoes' semaphores set");
 
   // detach & delete memorie condivise

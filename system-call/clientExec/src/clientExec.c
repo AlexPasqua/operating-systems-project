@@ -59,11 +59,6 @@ int main (int argc, char *argv[]) {
     errExit("clientExec: shmat failed");
   //--------------------------------------------------------------
 
-  //TEST
-  printf("\nREADING...\n");
-  for (unsigned int i = 0; i < SHM_DIM; i++){
-    printf("Entry %u:\n\tuser: %s\n\tkey: %lu\n\ttimestamp: %lu\n----------------------------------------\n",i,(shmptr+i)->user,(shmptr+i)->key,(shmptr+i)->timestamp);
-  }
 
   // leggi da memoria condivisa
   bool found = false;
