@@ -46,14 +46,14 @@ int main (int argc, char *argv[]) {
 
   //creo i semafori per la memoria condivisa
   crt_shm_semaphores();
-  semOp(shmsem_id, 0, -1);  /* azzero il sem e faccio sì che gli altri processi
-  vengano bloccati prima di accedere alla memoria condivisa */
+  semOp(shmsem_id, 0, -1);
 
   // creo il segmento di memoria condivisa e faccio l'attach
   crt_shm_segment();
   /* Dati importanti in variabili globali:
    * shared memory ID: shmid
    * puntatore alla prima struct della memoria condivisa: shmptr */
+  semOp(shmsem_id, 0, 1);
 
 
   // CREO KEYMANAGER ---------------------------------------------
@@ -108,6 +108,7 @@ int main (int argc, char *argv[]) {
     struct Request client_data;
     struct Response resp;
     int bR, offset = 0;
+
     while (1){
       // blocco il server finché un client non crea FIFOCLIENT
       semOp(fifosem_id, SRVSEM, -1);
@@ -129,6 +130,8 @@ int main (int argc, char *argv[]) {
 
 
       // scrivo in memoria condivisa -----------------------------
+      semOp(shmsem_id, 0, -1);
+      
       //trovo una entry libera
       for (offset = 0; ((shmptr + offset)->key != 0 && offset < SHM_DIM) || offset >= SHM_DIM; offset++){
       //for (entry_idx = 0; (shmptr + entry_idx)->key != 0 && entry_idx <= SHM_DIM; entry_idx++){
