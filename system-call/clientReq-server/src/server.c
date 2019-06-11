@@ -286,7 +286,13 @@ void keyman_sigHand(int sig) {
       break;
     }
 
-    default: exit(EXIT_SUCCESS); break;
+    default:
+      // detach memoria condivisa
+      if (shmdt(shmptr) != 0)
+        errExit("Server: shmdt failed");
+
+      exit(EXIT_SUCCESS);
+      break;
   }
 }
 
