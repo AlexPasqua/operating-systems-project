@@ -1,5 +1,4 @@
-
--valuta di collassare le 2 funz in server per creare semafori in una sola
+-prova a collassare le 2 funz in server per creare semafori in una sola
 	-prova a metterla in semaphores.c
 
 -valuta di creare keyManager in un altro punto di server per non fargli ereditare i file descriptor di FIFOSERVER ecc
