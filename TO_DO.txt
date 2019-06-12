@@ -1,3 +1,6 @@
+-testa invia
+-controlla bene i 3 servizi
+-controlla che avvebga la rimozione dei semafori
 -prova a collassare le 2 funz in server per creare semafori in una sola
 	-prova a metterla in semaphores.c
 
