@@ -1,3 +1,5 @@
+-elimina il figlio del client
+-metti il sem per sbloccare i client in attesa alla fine di client, non dopo alla fine del ciclo del server
 
 -valuta di collassare le 2 funz in server per creare semafori in una sola
 	-prova a metterla in semaphores.c

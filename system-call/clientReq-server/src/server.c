@@ -349,7 +349,7 @@ void generate_key(struct Response *response, struct Request *client_data){
 void keyman_sigHand(int sig) {
   switch (sig){
     case SIGALRM: {
-      cus_t time_limit = 60; //5min
+      cus_t time_limit = 300; //5min
 
       semOp(shmsem_id, 0, -1);
       del_old_entries(shmptr, time_limit, info_ptr->SHM_DIM);
