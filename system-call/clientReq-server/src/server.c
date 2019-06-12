@@ -196,9 +196,6 @@ int main (int argc, char *argv[]) {
       // chiudo FIFOCLIENT
       if (close(fifoclient) == -1)
         errExit("Server failed to close FIFOCLIENT");
-
-      // sblocco un client in attesa
-      semOp(fifosem_id, CLIMUTEX, 1);
     } //------------------------------------- chiusura while -------------------
 
     /* non si esce mai da while a meno che non arrivi un SIGTERM, ma in tal caso

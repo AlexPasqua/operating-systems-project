@@ -100,6 +100,9 @@ int main (int argc, char *argv[]) {
     print_recap(req, resp); //stampa riepilogo dati
     //------------------------------------------------------------
 
+    // sblocco un client in attesa
+    semOp(semid, CLIMUTEX, 1);
+
     exit(EXIT_SUCCESS);
 
     return 0;
