@@ -15,7 +15,7 @@ int main (int argc, char *argv[]) {
   if (argc < 2)
     errExit("Usage: ./invia <message queue key> <message>");
 
-  int key = atoi(argv[1]);
+  key_t key = (key_t)atoi(argv[1]);
   if (key < 0)
     errExit("La chiave dev'essere positiva");
 
@@ -25,14 +25,19 @@ int main (int argc, char *argv[]) {
 
   struct mymsg message;
   message.mtype = 1;
-  for (int i = 2; i < argc; i++)
-    strcat(message.mtext, strcat(argv[i], " "));
+  sprintf(message.mtext, "%s", "");
+  for (int i = 2; i < argc; i++){
+    strcat(message.mtext, argv[i]);
+    strcat(message.mtext, " ");
+  }
 
   if (msgsnd(msgid, &message, sizeof(message.mtext), 0) == -1)
     errExit("invia: msgsnd failed");
 
-  if (msgctl(msgid, IPC_RMID, NULL) == -1)
-    errExit("invia: failed to remove the message queue");
+  printf("Messaggio: %s\n", message.mtext);
+
+  /*if (msgctl(msgid, IPC_RMID, NULL) == -1)
+    errExit("invia: failed to remove the message queue");*/
 
   return 0;
 }
