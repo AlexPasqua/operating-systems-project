@@ -13,12 +13,8 @@
 #include "../../clientReq-server/inc/semaphores.h"
 
 // dichiarazione funzioni
-void get_shm_semaphores(void); //ottiene il set di semafori per la memoria condivisa
 bool read_user_key(struct Entry*, char*, server_k); //controlla se esiste una certa coppia chiave-utente
 server_k str_to_servk(char*); //trasforma una chiave da char* a server_k
-
-//variabili globali
-int semid;
 
 
 //==============================================================================
@@ -29,7 +25,8 @@ int main (int argc, char *argv[]) {
 
 
   // get dei semafori per la memoria condivisa
-  get_shm_semaphores();
+  int semid = get_semaphores(argv[0], SEMTYPE_SHM);
+  //get_shm_semaphores();
   semOp(semid, 0, -1);
 
   //get e attach delle memorie condivise--------------------------
@@ -108,17 +105,6 @@ int main (int argc, char *argv[]) {
   return 0;
 }
 
-
-//==============================================================================
-void get_shm_semaphores(){
-  key_t sem_key = ftok("../clientReq-server/src/server.c", 'b');
-  if (sem_key == -1)
-    errExit("clientExec: ftok failed");
-
-  semid = semget(sem_key, 1, S_IRUSR | S_IWUSR);
-  if (semid == -1)
-    errExit("clientExec: semget failed");
-}
 
 //==============================================================================
 bool read_user_key(struct Entry *entry, char *cmp_user, server_k cmp_key){

@@ -54,19 +54,10 @@ int main (int argc, char *argv[]) {
     //------------------------------------------------------------
 
 
-    // ottengo l'insieme di semafori creato dal server -----------
-    key_t sem_key = ftok("src/semaphores.c", 'a');
-    if (sem_key == -1)
-      errExit("clientReq failed to create a key fot the semaphores set");
-
-    int semid = semget(sem_key, 2, S_IRUSR | S_IWUSR);
-    if (semid == -1)
-      errExit("clientReq failed to perform semget");
-    //------------------------------------------------------------
-
+    // ottengo l'insieme di semafori creato dal server
+    int semid = get_semaphores(argv[0], SEMTYPE_FIFO);
 
     semOp(semid, CLIMUTEX, -1); //blocco gli altri client mentre uno sta comunicando
-
 
     // creo FIFOCLIENT, apro FIFOSERVER, apro FIFOCLIENT ---------
     fifocli_pathname = "/tmp/FIFOCLIENT";

@@ -1,2 +1,9 @@
-Creato info_shm, messo il detach e l'eliminazione in close_all e il detach anche da keyManager.
-Commentato il "#define SHM_DIM 350"
+-Dichiarato nuova funz universale per creare i semafori che mi servono in semaphores.h.
+-Creato la funzione in semaphores.c:
+	-Prende in input:
+		-il nome del processo chiamante per avere i path relativi corretti nel creare la chiave
+		-uno short per indicare il tipo dei semafori (se per fifo o per shm)
+	-Ritorna un int, cioè il semid
+	-Per chiave ecc si arrangia in base al tipo
+
+	-Ovviamente non è al 100% universale, funziona solo per creare i set di semafori specifici che servono a me
