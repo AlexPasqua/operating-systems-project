@@ -42,7 +42,6 @@ int get_semaphores(char *calling_proc, short type){
 
   switch (type){
     case SEMTYPE_FIFO:
-      strcat(key_pathname, "src/semaphores.c");
       key_proj = 'a';
       nsems = 2;
       values = (unsigned short *) malloc(nsems * sizeof(unsigned short));
@@ -51,7 +50,6 @@ int get_semaphores(char *calling_proc, short type){
       break;
 
     case SEMTYPE_SHM:
-      strcat(key_pathname, "src/server.c");
       key_proj = 'b';
       nsems = 1;
       values = (unsigned short *) malloc(sizeof(unsigned short));
@@ -62,6 +60,7 @@ int get_semaphores(char *calling_proc, short type){
   }
 
 
+  strcat(key_pathname, "src/semaphores.c");
   key_t key = ftok(key_pathname, key_proj);
   if (key == -1)
     errExit(strcat(calling_proc, ": ftok failed (in semaphores.c)"));
