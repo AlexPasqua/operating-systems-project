@@ -19,7 +19,7 @@ int main (int argc, char *argv[]) {
   if (key < 0)
     errExit("La chiave dev'essere positiva");
 
-  int msgid = msgget(key, IPC_CREAT | S_IRUSR | S_IWUSR);
+  int msgid = msgget(key, S_IRUSR | S_IWUSR);
   if (msgid == -1)
     errExit("invia: msgget failed");
 
