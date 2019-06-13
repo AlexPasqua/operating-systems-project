@@ -3,6 +3,7 @@
 #include <string.h>
 
 int main (int argc, char *argv[]) {
+  printf("Servizio STAMPA:\n");
   char result[200] = "";
 
   for (int i = 1; i < argc; i++){
@@ -10,7 +11,6 @@ int main (int argc, char *argv[]) {
     strcat(result, " ");
   }
 
-  printf("%s", result);
-
+  printf("%s", strcat(result, "\n"));
   return 0;
 }

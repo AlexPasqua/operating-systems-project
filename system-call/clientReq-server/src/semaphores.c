@@ -26,7 +26,7 @@ int get_semaphores(char *calling_proc, short type){
   }
 
 
-  char *key_pathname;
+  char key_pathname[100];
   char key_proj;
   unsigned short nsems, *values;
   int semget_flags = IPC_CREAT | S_IRUSR | S_IWUSR;
@@ -35,34 +35,28 @@ int get_semaphores(char *calling_proc, short type){
   if (strcmp(calling_proc, "./server") != 0)
     semget_flags = S_IRUSR | S_IWUSR;
 
+  sprintf(key_pathname, "%s", "");
+  if (strcmp(calling_proc, "./clientExec") == 0)
+    strcat(key_pathname, "../clientReq-server/");
+
 
   switch (type){
-    case SEMTYPE_FIFO: {
-      if (strcmp(calling_proc, "./clientExec") == 0)
-        key_pathname = "../clientReq-server/src/semaphores.c";
-      else
-        key_pathname = "src/semaphores.c";
-
+    case SEMTYPE_FIFO:
+      strcat(key_pathname, "src/semaphores.c");
       key_proj = 'a';
       nsems = 2;
       values = (unsigned short *) malloc(nsems * sizeof(unsigned short));
       values[0] = 0;
       values[1] = 1;
       break;
-    }
 
-    case SEMTYPE_SHM: {
-      if (strcmp(calling_proc, "./clientExec") == 0)
-        key_pathname = "../clientReq-server/src/server.c";
-      else
-        key_pathname = "src/server.c";
-
+    case SEMTYPE_SHM:
+      strcat(key_pathname, "src/server.c");
       key_proj = 'b';
       nsems = 1;
       values = (unsigned short *) malloc(sizeof(unsigned short));
       *values = 1;
       break;
-    }
 
     default: errExit("Bad semaphore type");
   }
