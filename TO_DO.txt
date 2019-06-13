@@ -1,5 +1,5 @@
--prova a collassare le 2 funz in server per creare semafori in una sola
-	-prova a metterla in semaphores.c
+-prova a far utilizzare "crt_semaphores" ai vari programmi
 
 -valuta di creare keyManager in un altro punto di server per non fargli ereditare i file descriptor di FIFOSERVER ecc
+-Metti IPC_CREAT dove servirebbe e cerca id risolvere i problemi che creerà capendo perché li crea
 -sarebbe figo cercare dove scrivere in shm tramite multithreading (=crea processi figlio per la ricerca)
