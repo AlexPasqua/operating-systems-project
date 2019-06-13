@@ -3,6 +3,8 @@
 
 #define SRVSEM 0
 #define CLIMUTEX 1
+#define SEMTYPE_FIFO 0
+#define SEMTYPE_SHM 1
 
 // definizione della union semun
 union semun {
@@ -11,6 +13,8 @@ union semun {
   unsigned short *array;
 };
 
+// dichiarazione funcioni
+void crt_semaphores(short type, int *semid);  //crea un semaphores set per le fifo o shm
 void semOp (int semid, unsigned short sem_num, short sem_op);
 
 #endif
