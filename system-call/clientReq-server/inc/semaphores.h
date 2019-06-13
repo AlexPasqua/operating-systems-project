@@ -14,7 +14,7 @@ union semun {
 };
 
 // dichiarazione funcioni
-int crt_semaphores(char *calling_prog, short type);  //crea un semaphores set per le fifo o shm
+int get_semaphores(char *calling_prog, short type);  //crea un semaphores set per le fifo o shm
 void semOp (int semid, unsigned short sem_num, short sem_op);
 
 #endif

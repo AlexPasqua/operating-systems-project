@@ -22,9 +22,9 @@
 
 // dichiarazione funzioni
 void set_sigprocmask(sigset_t*, int);  // imposta la mask dei signal del processo
-void crt_shm_semaphores();  // crea i semafori per la memoria condivisa
+//void crt_shm_semaphores();  // crea i semafori per la memoria condivisa
 void crt_shm_segment(); // crea il segmento di memoria condivisa e fa l'attach
-void crt_fifo_semaphores(); // crea i semafori per la comunicazione su fifo
+//void crt_fifo_semaphores(); // crea i semafori per la comunicazione su fifo
 void generate_key(struct Response*, struct Request*); // genera la chiave di utilizzo
 void keyman_sigHand(int); // signal handler del KeyManager
 void close_all(int);  // funz per le operazioni pre-chiusura (signal handler del server)
@@ -47,7 +47,7 @@ int main (int argc, char *argv[]) {
   set_sigprocmask(&signal_set, SIGTERM);
 
   //creo i semafori per la memoria condivisa
-  crt_shm_semaphores();
+  shmsem_id = get_semaphores(argv[0], SEMTYPE_SHM);
   semOp(shmsem_id, 0, -1);
 
   // creo la struct in mem condivisa contenente i dati sulla shm principale
@@ -110,7 +110,7 @@ int main (int argc, char *argv[]) {
       errExit("Server: signal handler setting failed");
 
     // creo i semafori per gestire la comunicazione su FIFO
-    crt_fifo_semaphores();
+    fifosem_id = get_semaphores(argv[0], SEMTYPE_FIFO);
 
     // creo e apro FIFOSERVER --------------------------------------
     fifoserv_pathname = "/tmp/FIFOSERVER";  // (var globale)
@@ -366,7 +366,6 @@ void keyman_sigHand(int sig) {
       key_t key = ftok("src/server.c", info_ptr->key_proj);
       if (key == -1) errExit("KeyManager: ftok failed (while expanding shm)");
 
-      //TEST
       shmid = shmget(key, 0, S_IRUSR | S_IWUSR);
       if (shmid == -1) errExit("KeyManager: shmget failed (while expanding shm)");
 
