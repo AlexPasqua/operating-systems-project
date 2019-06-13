@@ -22,9 +22,7 @@
 
 // dichiarazione funzioni
 void set_sigprocmask(sigset_t*, int);  // imposta la mask dei signal del processo
-//void crt_shm_semaphores();  // crea i semafori per la memoria condivisa
 void crt_shm_segment(); // crea il segmento di memoria condivisa e fa l'attach
-//void crt_fifo_semaphores(); // crea i semafori per la comunicazione su fifo
 void generate_key(struct Response*, struct Request*); // genera la chiave di utilizzo
 void keyman_sigHand(int); // signal handler del KeyManager
 void close_all(int);  // funz per le operazioni pre-chiusura (signal handler del server)
@@ -268,24 +266,6 @@ void set_sigprocmask(sigset_t *signal_set, int sig_to_allow){
 }
 
 //==============================================================================
-// crea i semafori per la memoria condivisa
-void crt_shm_semaphores(){
-  key_t key = ftok("src/server.c", 'b');
-  if (key == -1)
-    errExit("Server failed to create a key for the shm semaphores set");
-
-  // (shmsem_id var globale)
-  shmsem_id = semget(key, 1, IPC_CREAT | S_IRUSR | S_IWUSR);
-  if (shmsem_id == -1)
-    errExit("Server failed to perform semget (shm sems)");
-
-  union semun arg;
-  arg.val = 1;  // solo il primo processo (server) può passare
-  if (semctl(shmsem_id, 0, SETVAL, arg) == -1)
-    errExit("Server failed to set shm's semaphore values");
-}
-
-//==============================================================================
 // crea il segmento di memoria condivisa e fa l'attach
 void crt_shm_segment(){
   key_t key = ftok("src/server.c", info_ptr->key_proj);
@@ -300,26 +280,6 @@ void crt_shm_segment(){
   shmptr = (Entry *) shmat(shmid, NULL, 0);
   if (shmptr == (void *)(-1))
     errExit("Server: shmat failed");
-}
-
-//==============================================================================
-// crea i semafori per la comunicazione su fifo
-void crt_fifo_semaphores(){
-  key_t key = ftok("src/semaphores.c", 'a');
-  if (key == -1)
-    errExit("Server failed to create a key for the fifo semaphores set");
-
-  // "fifosem_id" è una variabile globale
-  fifosem_id = semget(key, 2, IPC_CREAT | S_IRUSR | S_IWUSR);
-  if (fifosem_id == -1)
-    errExit("Server failed to perform semget (fifo sems)");
-
-  unsigned short sem_values[2] = {0, 1}; /* il primo è per il server,
-  il secondo è per mutua esclusione tra i client*/
-  union semun arg;
-  arg.array = sem_values;
-  if (semctl(fifosem_id, 0, SETALL, arg) == -1)
-    errExit("Server failed to set fifoes' semaphores values");
 }
 
 //==============================================================================
