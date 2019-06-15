@@ -121,7 +121,7 @@ void print_recap(struct Request req, struct Response resp){
 //==============================================================================
 void sigHand(int sig){
   printf("\n\nClosing ClientReq...\n");
-  exit(EXIT_SUCCESS);
+  exit(EXIT_FAILURE);
 }
 
 //==============================================================================
