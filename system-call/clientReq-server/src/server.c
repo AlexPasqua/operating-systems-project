@@ -29,7 +29,7 @@ void close_all(int);  // funz per le operazioni pre-chiusura (signal handler del
 void expand_shm();
 
 // variabili globali
-int fifoserver, fifoclient, fifosem_id, shmsem_id, shmid, infoshm_id;
+int fifoserver = -1, fifoclient, fifosem_id, shmsem_id, shmid, infoshm_id;
 char *fifoserv_pathname;
 Entry *shmptr;
 pid_t km_pid;
@@ -349,36 +349,35 @@ void keyman_sigHand(int sig) {
 void close_all(int sig){
   // inoltro SIGTERM al KeyManager
   if (kill(km_pid, SIGTERM) == -1)
-    errExit("Server: kill failed");
+    printf("Server: kill failed\n");
 
   if (wait(NULL) == -1)
-    errExit("Server: wait failed");
+    printf("Server: wait failed\n");
 
   // chiudo FIFOCLIENT
   close(fifoclient);  //niente controllo perché potrebbe essere già stata chiusa nel while
 
   // chiudo ed elimino FIFOSERVER
-  close(fifoserver);
-  /*if (close(fifoserver) == -1)
-    errExit("Server failed to close FIFOSERVER");*/
+  if (close(fifoserver) == -1 && fifoserver != -1)
+    printf("Server failed to close FIFOSERVER\n");
 
   if (unlink(fifoserv_pathname) != 0)
-    errExit("Server failed to unlink FIFOSERVER");
+    printf("Server failed to unlink FIFOSERVER\n");
 
   // elimino il set di semafori per le FIFO
   if (semctl(fifosem_id, 0, IPC_RMID, NULL) == -1)
-    errExit("Server failed to remove fifoes' semaphores set");
+    printf("Server failed to remove fifoes' semaphores set\n");
 
   // detach & delete memorie condivise
   if (shmdt(shmptr) != 0 || shmdt(info_ptr) != 0)
-    errExit("Server: shmdt failed");
+    printf("Server: shmdt failed\n");
 
   if (shmctl(shmid, IPC_RMID, NULL) != 0 || shmctl(infoshm_id, IPC_RMID, NULL) != 0)
-    errExit("Server failed to delete shared memory segment");
+    printf("Server failed to delete shared memory segment\n");
 
   // elimino il set di semafori per la memoria condivisa
   if (semctl(shmsem_id, 0, IPC_RMID, NULL) == -1)
-    errExit("Server failed to remove shm's semaphores set");
+    printf("Server failed to remove shm's semaphores set\n");
 
   exit(EXIT_SUCCESS);
 }
