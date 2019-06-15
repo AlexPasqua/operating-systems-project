@@ -128,11 +128,11 @@ void sigHand(int sig){
 void close_all(){
   // chiudo FIFOSERVER, chiudo ed elimino FIFOCLIENT
   if (close(fifoserver) == -1 && fifoserver != -1)  // fifoserver != -1 indica che è stata aperta la FIFO
-    errExit("ClientReq failed to close FIFOSERVER");
+    printf("ClientReq failed to close FIFOSERVER\n");
 
   if (close(fifoclient) == -1 && fifoclient != -1)
-    errExit("ClientReq failed to close FIFOCLIENT");
+    printf("ClientReq failed to close FIFOCLIENT\n");
 
   if (unlink(fifocli_pathname) != 0 && strcmp(fifocli_pathname, "") != 0)
-    errExit("ClientReq failed to unlink FIFOCLIENT");
+    printf("ClientReq failed to unlink FIFOCLIENT\n");
 }
