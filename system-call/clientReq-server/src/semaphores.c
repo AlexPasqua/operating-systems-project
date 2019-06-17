@@ -29,7 +29,7 @@ int get_semaphores(char *calling_proc, short type){
   char key_pathname[100];
   char key_proj;
   unsigned short nsems, *values;
-  int semget_flags = IPC_CREAT | S_IRUSR | S_IWUSR;
+  int semget_flags = IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR;
 
   // in caso non sia necessario CREARE i semafori, toglo IPC_CREAT da semget_flags
   if (strcmp(calling_proc, "./server") != 0)

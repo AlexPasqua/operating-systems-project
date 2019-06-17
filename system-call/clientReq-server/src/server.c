@@ -52,7 +52,7 @@ int main (int argc, char *argv[]) {
   key_t infoshm_key = ftok("src/shmem.c", 'a');
   if (infoshm_key == -1) errExit("Server: ftok (infoshm_key) failed");
 
-  infoshm_id = shmget(infoshm_key, sizeof(struct my_shm_info), IPC_CREAT | S_IRUSR | S_IWUSR);
+  infoshm_id = shmget(infoshm_key, sizeof(struct my_shm_info), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
   if (infoshm_id == -1) errExit("Server: shmget (infoshm_id) failed");
 
   info_ptr = (struct my_shm_info *) shmat(infoshm_id, NULL, 0);
@@ -220,7 +220,7 @@ void expand_shm(){
   key_t new_key = ftok("src/server.c", proj);
   if (new_key == -1) errExit("Server: ftok (in 'expand_shm') failed");
 
-  int new_shmid = shmget(new_key, SHM_DIM * sizeof(Entry), IPC_CREAT | S_IRUSR | S_IWUSR);
+  int new_shmid = shmget(new_key, SHM_DIM * sizeof(Entry), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
   if (new_shmid == -1) errExit("Server: shmget (in 'expand_shm') failed");
 
   Entry *new_shmptr = (Entry *) shmat(new_shmid, NULL, 0);
@@ -272,7 +272,7 @@ void crt_shm_segment(){
   if (key == -1)
     errExit("Server failed to create a key for the shared mem segment");
 
-  shmid = shmget(key, info_ptr->SHM_DIM * sizeof(Entry), IPC_CREAT | S_IRUSR | S_IWUSR);
+  shmid = shmget(key, info_ptr->SHM_DIM * sizeof(Entry), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
   if (shmid == -1)
     errExit("Server: shmget failed");
 
