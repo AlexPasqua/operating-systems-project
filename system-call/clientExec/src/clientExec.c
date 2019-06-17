@@ -81,7 +81,7 @@ int main (int argc, char *argv[]) {
 
   if (found){
     char *services[] = {"stampa", "salva", "invia"};
-    short service_idx = argv[2][9] - 48;
+    short service_idx = argv[2][10] - 48;
     printf("Coppia chiave-utente corretta! Eseguo %s...\n\n", services[service_idx]);
 
     // lancio il programma desiderato --------------------------
