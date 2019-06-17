@@ -17,16 +17,17 @@
 #include "semaphores.h"
 #include "shmem.h"
 
-#define HUNDREAD_THOUSANDS 100000
+#define MILLION 1000000
 #define THOUSAND_BILLIONS 1000000000000
 
 // dichiarazione funzioni
 void set_sigprocmask(sigset_t*, int);  // imposta la mask dei signal del processo
 void crt_shm_segment(); // crea il segmento di memoria condivisa e fa l'attach
 void generate_key(struct Response*, struct Request*); // genera la chiave di utilizzo
+unsigned int hashcode(const char *); //funz per creare una codice abbinato ad una stringa
 void keyman_sigHand(int); // signal handler del KeyManager
 void close_all(int);  // funz per le operazioni pre-chiusura (signal handler del server)
-void expand_shm();
+void expand_shm();  //funzione per espandere la shm se piena
 
 // variabili globali
 int fifoserver = -1, fifoclient, fifosem_id, shmsem_id, shmid, infoshm_id;
@@ -286,9 +287,9 @@ void crt_shm_segment(){
 // genera la chiave di utilizzo
 void generate_key(struct Response *response, struct Request *client_data){
   /* genero la chiave:
-   *  prendo il timestamp, accodo il numero corrispondente all'iniziale
-   *  dello user, una cifra per il servizio (0=stampa, 1=salva, 2=invia)
-   *  e una cifra casuale. Dopodiché elimino le prime 3 cifre (che sono sempre uguali
+   *  prendo il timestamp, accodo un hashcode della stringa dello user (4 cifre),
+   *  una cifra per il servizio (0=stampa, 1=salva, 2=invia) e una cifra casuale.
+   *  Dopodiché elimino le prime 4 cifre (che sono sempre uguali
    *  perché cambiano al passare di mesi/anni)
    *
    *  per il servizio controllo solo i primi 2 caratteri di service
@@ -296,9 +297,18 @@ void generate_key(struct Response *response, struct Request *client_data){
    */
   unsigned long timestamp = time(NULL);
   srand(timestamp);
-  response->key = ((timestamp * HUNDREAD_THOUSANDS) + (client_data->user[0] * 100) +
+  response->key = ((timestamp * MILLION) + (hashcode(client_data->user) * 100) +
              ((client_data->service[0] == 'i') ? 20 : ((client_data->service[1] == 't') ? 0 : 10)) +
              (rand() % 10)) % THOUSAND_BILLIONS;
+}
+
+//==============================================================================
+unsigned int hashcode(const char *str){
+  unsigned long hash = 5381;
+  while (*str != '\0')
+    hash = ((hash << (rand() % 6)) + hash) + *(str++);
+
+  return (unsigned int)(hash % 10000);
 }
 
 //==============================================================================
