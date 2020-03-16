@@ -20,8 +20,8 @@
 
 ## Step 2:
 <font size=4>
-	1. <b>With the first bash </b>(in <i>clientReq-server</i> directory)<b> execute the server process:</b> <font face="consolas">&ensp;./server</font> <br>
-	2. <b>With the third bash </b>(in <i>clientReq-server</i> directory)<b> exectute <i>"clientReq"</i>:</b> <font face="consolas">&ensp;./clientReq</font> <br>
+1. <b>With the first bash </b>(in <i>clientReq-server</i> directory)<b> execute the server process:</b> <font face="consolas">&ensp;./server</font> <br>
+2. <b>With the third bash </b>(in <i>clientReq-server</i> directory)<b> exectute <i>"clientReq"</i>:</b> <font face="consolas">&ensp;./clientReq</font> <br>
 </font>
 
 <font size=4><u> Now everything is ready to begin using the program</u></font><br><br>
@@ -34,14 +34,14 @@
 		2. Insert the name of the desired service
 	</b>
 	("stampa", "salva", "invia") <br>
-	<b>
-		3.  WIth the bash in <i>clientExec<i> directory execute <i>"clientExec"</i>:
-	</b>
+	<b>3.  WIth the bash in <i>clientExec<i> directory execute <i>"clientExec"</i>:</b>
 	<font face="consolas">&ensp;./clientExec <i>userid server_key args</i> </font><br>
-		&ensp;&ensp;&ensp;&ensp;&ensp;
-		note: <i>userid</i> is the one chosen by the user (in <i>clientReq</i>)<br>&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;
-		<i>server_key</i> is the code returned by the server process after entering data with <i>clientReq</i><br>&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;
-		<i>args</i>: see below <br>
+	&ensp;&ensp;&ensp;&ensp;&ensp;
+	note: <i>userid</i> is the one chosen by the user (in <i>clientReq</i>)<br>
+	&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;
+	<i>server_key</i> is the code returned by the server process after entering data with <i>clientReq</i><br>
+	&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;
+	<i>args</i>: see below <br>
 
 <i>args</i>, depending on the service chosen, is... <br>
 1. service <i>stampa</i>: what you want to print <br>
@@ -49,18 +49,17 @@
 3. service <i>invia</i>: id key of a message queue already existing in the system followed by what you want to send in it <br>
 </font><br>
 
+</i></i>
 <font size=6> <b>To kill:</b> </font><br>
 <font size=4>
 	<b>NOTE:</b> the <i>server</i> is only sensitive to <b>SIGTERM</b>. So to kill it it's necessary to throw:
-	<font face="consolas">
-		killall server <br>
-	</font>
+	<font face="consolas">killall server </font><br>
 	<u>PAY ATTENTION NOT TO KILL THE WRONG PROCESS!!!</u>
 </font>
 <br><br><br>
 
 
-<font size=4><u> **In case of problems</u>:**</font>
+<font size=4><u><b>In case of problems</b></u>:</font>
 <font size=3>
 	execute the following<br>
 	<font face="consolas">
