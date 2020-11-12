@@ -1,0 +1,3 @@
+[submodule "MentOS"]
+	path = MentOS
+	url = https://github.com/AlexPasqua/MentOS.git
